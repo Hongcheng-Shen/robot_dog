@@ -339,40 +339,83 @@ namespace moco_传感器 {
     }
 //手势
     export enum Gesture_state {
-        //% blockId="right" block="right"
+        //% block="从左到右"
         right = 1,
-        //% blockId="left" block="left"  
+        //% block="从右到左"  
         left = 2,
-        //% blockId="up" block="up"        
+        //% block="从下往上"        
         up = 4,
-        //% blockId="down" block="down"        
+        //% block="从上往下"        
         down = 8,
-        //% blockId="forward" block="forward"        
+        //% block="从后往前"        
         forward = 16,
-        //% blockId="backward" block="backward"        
+        //% block="从前往后"        
         backward = 32,
-        //% blockId="clockwise" block="clockwise"        
+        //% block="顺时针"        
         clockwise = 64,
-        //% blockId="count_clockwise" block="count_clockwise"        
+        //% block="逆时针"        
         count_clockwise = 128,
-        //% blockId="wave" block="wave"        
+        //% block="挥手"        
         wave = 256
     }
+//七彩灯
+    export enum enColor {
 
+        //%  block="灭"
+        OFF = 0,
+        //%  block="红色"
+        Red,
+        //%  block="绿色"
+        Green,
+        //% block="蓝色"
+        Blue,
+        //%  block="白色"
+        White,
+        //%  block="青色"
+        Cyan,
+        //%  block="品红"
+        Pinkish,
+        //%  block="黄色"
+        Yellow,
+
+    }
+//超声波
+    export enum PingUnit {
+        //% block="μs"
+        MicroSeconds,
+        //% block="cm"
+        Centimeters,
+        //% block="inches"
+        Inches
+    }
 
 //超声波
-//% block=MOCO.超声波 block="超声波"
-//%weight=1
-    export function 超声波(): number {
-        return 0;
+//% blockId=MOCO.超声波 block="超声波 |发射管脚 %trig|接收管脚 %echo|unit %unit"
+//% weight=96
+//% blockGap=20
+//% color="#228B22"
+//% name.fieldEditor="gridpicker" name.fieldOptions.columns=5
+    export function ping(trig: DigitalPin, echo: DigitalPin, unit: PingUnit, maxCmDistance = 500): number {
+        // send pulse
+        maxCmDistance = 500
+        pins.setPull(trig, PinPullMode.PullNone);
+        pins.digitalWritePin(trig, 0);
+        control.waitMicros(2);
+        pins.digitalWritePin(trig, 1);
+        control.waitMicros(10);
+        pins.digitalWritePin(trig, 0);
+
+        // read pulse
+        const d = pins.pulseIn(echo, PulseValue.High, maxCmDistance * 58);
+
+        switch (unit) {
+            case PingUnit.Centimeters: return Math.idiv(d, 58);
+            case PingUnit.Inches: return Math.idiv(d, 148);
+            default: return d;
+        }
     }
 
-//七彩灯
-//% block=MOCO.七彩灯 block="七彩灯"
-//%weight=1
-    export function 七彩灯(): number {
-        return 0;
-    }
+
 
 //红外
 //% block=MOCO.红外 block="红外|引脚 %pin|value %value "
@@ -560,7 +603,8 @@ namespace moco_传感器 {
     }
 
 
-    //% blockId="GestureInit" block="gesture init(success：0 failure：255)"
+    //% block=MOCO.手势 block="初始化手势识别（成功：0 失败：255）"
+    //% color="#3CB371"
     export function GestureInit(): number {
         basic.pause(800);//等待芯片稳定
 
@@ -592,7 +636,8 @@ namespace moco_传感器 {
 
     }
 
-    //% blockId="GetGesture" block="get gesture"
+    //% block=MOCO.手势 block="获取手势识别结果值"
+    //% color="#3CB371"
     export function GetGesture(): number {
 
         let date = GestureReadReg(0x43);
@@ -620,11 +665,129 @@ namespace moco_传感器 {
         return date;
     }
 
-    //% blockId="SelectGesture" block="select gesture is %state"
-    //% color="#22cc22"
-    export function SelectGesture(state: Gesture_state): number {
+    //% block=MOCO.手势 block="选择手势为| %state "
+    //% color="#3CB371"
+    export function 选择手势为(state: Gesture_state): number {
 
         return state;
     }
 
+
+//七彩灯
+    //% block=MOCO.RGB block="RGB七彩灯|引脚R %pin1|引脚G %pin2|引脚B %pin3|显示 %value"
+    //% weight=1
+    //% blockGap=8
+    //% color="#C814B8"
+    //% name.fieldEditor="gridpicker" name.fieldOptions.columns=4
+    export function RGB2(pin1: DigitalPin, pin2: DigitalPin, pin3: DigitalPin, value: enColor): void {
+
+        switch (value) {
+            case enColor.OFF: {
+                pins.digitalWritePin(pin1, 0);
+                pins.digitalWritePin(pin2, 0);
+                pins.digitalWritePin(pin3, 0);
+                break;
+            }
+            case enColor.Red: {
+                pins.digitalWritePin(pin1, 1);
+                pins.digitalWritePin(pin2, 0);
+                pins.digitalWritePin(pin3, 0);
+                break;
+            }
+            case enColor.Green: {
+                pins.digitalWritePin(pin1, 0);
+                pins.digitalWritePin(pin2, 1);
+                pins.digitalWritePin(pin3, 0);
+                break;
+            }
+            case enColor.Blue: {
+                pins.digitalWritePin(pin1, 0);
+                pins.digitalWritePin(pin2, 0);
+                pins.digitalWritePin(pin3, 1);
+                break;
+            }
+            case enColor.White: {
+                pins.digitalWritePin(pin1, 1);
+                pins.digitalWritePin(pin2, 1);
+                pins.digitalWritePin(pin3, 1);
+                break;
+            }
+            case enColor.Cyan: {
+                pins.digitalWritePin(pin1, 0);
+                pins.digitalWritePin(pin2, 1);
+                pins.digitalWritePin(pin3, 1);
+                break;
+            }
+            case enColor.Pinkish: {
+                pins.digitalWritePin(pin1, 1);
+                pins.digitalWritePin(pin2, 0);
+                pins.digitalWritePin(pin3, 1);
+                break;
+            }
+            case enColor.Yellow: {
+                pins.digitalWritePin(pin1, 1);
+                pins.digitalWritePin(pin2, 1);
+                pins.digitalWritePin(pin3, 0);
+                break;
+            }
+        }
+
+    }
+
+}
+
+//#########################舵机控制#######################
+//% color="#bb10B8" weight=25 icon="\uf1a4"
+namespace moco_舵机控制{
+    let ToSlaveBuf = pins.createBuffer(SSLen)
+    let usb_send_cnt_1 = 0
+    let SfoCnt = 0
+    let DaHeader = 0x2B
+    let DaTail = 0xEE
+
+    // export enum Steering_gear{
+    //   //% block="0"
+    //   Sg = 0,
+    //   //% block="1"
+    //     Sg = 0,
+
+    // }
+    
+    function SG_SPI_Send() {
+        pins.digitalWritePin(DigitalPin.P16, 0)
+        pins.digitalWritePin(DigitalPin.P6, 0)
+        for (let i = 0; i < 200; i++);
+        for (let i = 0; i < SSLen; i++) {
+            InfoTemp[i] = pins.spiWrite(ToSlaveBuf[i])
+        }
+        //serial.writeBuffer(ToSlaveBuf)
+        pins.digitalWritePin(DigitalPin.P6, 1)
+        pins.digitalWritePin(DigitalPin.P16, 1)
+    }
+
+
+    //% block=MOCO.舵机控制 block="舵机| 号 %h|PWM值 %pwm|变化（快慢） %Gap|"
+    //% weight=1
+    //% blockGap=8
+    //% color="#C814B8"
+    //% h.min=0 h.max=3
+    //% pwm.min=500 pwm.max=2500
+    //% Gap.min=0 Gap.max=9
+    //% name.fieldEditor="gridpicker" name.fieldOptions.columns=10
+    export function 舵机(h: number, pwm: number,Gap: number){
+        usb_send_cnt_1 = 0;
+
+        ToSlaveBuf[usb_send_cnt_1++] = DaHeader; //头
+        ToSlaveBuf[usb_send_cnt_1++] = SSLen - 2; //固定长度
+        ToSlaveBuf[usb_send_cnt_1++] = 2;  //功能码
+
+        ToSlaveBuf[usb_send_cnt_1++] = h;
+        ToSlaveBuf[usb_send_cnt_1++] = pwm >> 8;
+        ToSlaveBuf[usb_send_cnt_1++] = (pwm << 8) >> 8;
+        ToSlaveBuf[usb_send_cnt_1++] = Gap;
+
+        ToSlaveBuf[SSLen - 1] = DaTail;//固定长度
+
+        SG_SPI_Send()
+    }
 }
