@@ -45,9 +45,9 @@ function SPI_SPCP_Init() {
             }
             pins.digitalWritePin(DigitalPin.P6, 1)
             pins.digitalWritePin(DigitalPin.P16, 1)
-            serial.writeBuffer(InfoTemp)
-            SPI_unpacking()
-            basic.pause(500)
+           // serial.writeBuffer(InfoTemp)
+             SPI_unpacking()
+            basic.pause(200)
         }    
     }
 
@@ -83,8 +83,9 @@ let cnt = 0
 //数据的解析
     function SPI_unpacking(){
         cnt = 0
-        if (InfoTemp[0] == DaHeader && InfoTemp[1] == SSLen - 2 && InfoTemp[2] == 0x80 && InfoTemp[SSLen - 2] == DaTail)
+        if (InfoTemp[0] == 0x2B && InfoTemp[2] == 0x80)
             robot_mode = InfoTemp[3]
+        //serial.writeNumber(robot_mode)
     }
 
 
@@ -164,7 +165,23 @@ function get_float_hex(decString: number) {
     ToSlaveBuf[usb_send_cnt++] = ((ss11 >> 24))
 }
 
-
+//原地站立
+function Standing(){
+    if (robot_mode == 1)
+        return
+    gait_mode = 5
+    while (1) {
+        SPI_Send()
+        // serial.writeNumber(9)
+        // serial.writeNumber(robot_mode)
+        if (robot_mode == 1) {
+            gait_mode = 4
+            SPI_Send()
+            //serial.writeNumber(10)
+            return;
+        }
+    }
+}
 
 
 
@@ -251,10 +268,39 @@ namespace moco_底盘模式 {
          basic.pause(3000)
         while(1){
             SPI_Send()
-            if (robot_mode == 1)
+            if (robot_mode == 1){
+                for(let i =0;i < 2;i++){
+                    SPI_Send()
+                    basic.pause(100)
+                }
                 return
+            }
         }
     }
+
+//机器狗原地站立
+//% block=MOCO.机器狗原地站立 block="机器狗原地站立"
+//%weight=2
+    export function 机器狗原地站立(): void {
+        Standing()
+    }    
+
+//机器狗启动/停止    
+//% block=MOCO.机器狗停止 block="机器狗停止"
+//%weight=2
+    export function 机器狗停止(): void {
+        if (robot_mode == 4){
+            Standing()
+            }
+        if(robot_mode == 1){
+            rc_pos_cmd = 0.01
+        }
+        SPI_Send()
+        basic.pause(50)
+        SPI_Send()
+        
+
+    }    
 
 //机器狗步态选着
 //% block=MOCO.机器狗步态 block="机器狗|步态 %g"
@@ -263,13 +309,17 @@ namespace moco_底盘模式 {
     export function 机器狗步态(g: gait): void {
         switch (g) {
             case gait.慢跑:
-                gait_mode = 1; break;
+                gait_mode = 1; 
                 while (1) {
                     SPI_Send()
-                    if (robot_mode == 4)
+                    if (robot_mode == 4){
+                        SPI_Send()
+                        //serial.writeNumber(2)
                         return
+                    }
                 }
         }
+        SPI_Send()
     }
 
 //机器狗运动方向
@@ -281,19 +331,20 @@ namespace moco_底盘模式 {
     export function 机器狗控制(m: mode, speed1: number, time1: number): void {
         let Sum_S = 0.00
         Sum_S = speed1 / 100.00
+        SPI_Send()
         switch (m) {
             case mode.前进:
-                rc_spd_cmd_X = Sum_S; break;
+                rc_spd_cmd_X = Sum_S; SPI_Send(); break;
             case mode.后退:
-                rc_spd_cmd_X = (-Sum_S); break;
+                rc_spd_cmd_X = (-Sum_S); SPI_Send(); break;
             case mode.左转:
-                rc_att_rate_cmd = (speed1 * 5); break;
+                rc_att_rate_cmd = (speed1 * 5); SPI_Send(); break;
             case mode.右转:
-                rc_att_rate_cmd = (-speed1 * 5); break;
+                rc_att_rate_cmd = (-speed1 * 5); SPI_Send(); break;
             case mode.左移:
-                rc_spd_cmd_y = Sum_S; break;
-            case mode.右转:
-                rc_spd_cmd_y = (-Sum_S); break;
+                rc_spd_cmd_y = (-Sum_S); SPI_Send();  break;
+            case mode.右移:
+                rc_spd_cmd_y = Sum_S; SPI_Send();  break;
         }
         for (let e = 0; e < time1; e++) {
             SPI_Send()
@@ -312,11 +363,11 @@ namespace moco_底盘模式 {
             case mode1.俯视:
                 rc_att_cmd_x = speed1; break;
             case mode1.仰视:
-                rc_att_cmd_x = speed1; break;
+                rc_att_cmd_x = (-speed1); break;
             case mode1.左摆:
                 rc_att_cmd_y = speed1; break;
             case mode1.右摆:
-                rc_att_cmd_y = speed1; break;
+                rc_att_cmd_y = (-speed1); break;
             case mode1.航向角:
                 rc_att_cmd = speed1; break;
         }
@@ -767,55 +818,48 @@ namespace moco_传感器 {
 //#########################舵机控制#######################
 //% color="#03AA74" weight=25 icon="\uf021" blockGap=8
 namespace moco_舵机控制{
-    // let ToSlaveBuf = pins.createBuffer(SSLen)
-    // let usb_send_cnt_1 = 0
-    // let SfoCnt = 0
-    // let DaHeader = 0x2B
-    // let DaTail = 0xEE
+    let ToSlaveBuf_1 = pins.createBuffer(SSLen)
+    let InfoTemp_1 = pins.createBuffer(SSLen)
+    let usb_send_cnt_1 = 0
+    let SfoCnt_1 = 0
+    let DaHeader_1 = 0x2B
+    let DaTail_1 = 0xEE
+ 
+    function SG_SPI_Send() {
+        pins.digitalWritePin(DigitalPin.P16, 0)
+        pins.digitalWritePin(DigitalPin.P6, 0)
+        for (let i = 0; i < 200; i++);
+        for (let i = 0; i < SSLen; i++) {
+            InfoTemp_1[i] = pins.spiWrite(ToSlaveBuf_1[i])
+        }
+        serial.writeBuffer(ToSlaveBuf_1)
+        pins.digitalWritePin(DigitalPin.P6, 1)
+        pins.digitalWritePin(DigitalPin.P16, 1)
+        basic.pause(200)
+    }
 
-    // // export enum Steering_gear{
-    // //   //% block="0"
-    // //   Sg = 0,
-    // //   //% block="1"
-    // //     Sg = 0,
+    //% block=MOCO.舵机控制 block="舵机| 号 %h|PWM值 %pwm|变化（快慢） %Gap|"
+    //% weight=1
+    //% blockGap=8
+    //% color="#C814B8"
+    //% h.min=0 h.max=3
+    //% pwm.min=500 pwm.max=2500
+    //% Gap.min=0 Gap.max=9
+    //% name.fieldEditor="gridpicker" name.fieldOptions.columns=10
+    export function 舵机(h: number, pwm: number,Gap: number){
+        usb_send_cnt_1 = 0;
 
-    // // }
-    
-    // function SG_SPI_Send() {
-    //     pins.digitalWritePin(DigitalPin.P16, 0)
-    //     pins.digitalWritePin(DigitalPin.P6, 0)
-    //     for (let i = 0; i < 200; i++);
-    //     for (let i = 0; i < SSLen; i++) {
-    //         InfoTemp[i] = pins.spiWrite(ToSlaveBuf[i])
-    //     }
-    //     //serial.writeBuffer(ToSlaveBuf)
-    //     pins.digitalWritePin(DigitalPin.P6, 1)
-    //     pins.digitalWritePin(DigitalPin.P16, 1)
-    // }
+        ToSlaveBuf_1[usb_send_cnt_1++] = DaHeader_1; //头
+        ToSlaveBuf_1[usb_send_cnt_1++] = SSLen - 2; //固定长度
+        ToSlaveBuf_1[usb_send_cnt_1++] = 2;  //功能码
 
+        ToSlaveBuf_1[usb_send_cnt_1++] = h;
+        ToSlaveBuf_1[usb_send_cnt_1++] = pwm >> 8;
+        ToSlaveBuf_1[usb_send_cnt_1++] = (pwm << 8) >> 8;
+        ToSlaveBuf_1[usb_send_cnt_1++] = Gap;
 
-    // //% block=MOCO.舵机控制 block="舵机| 号 %h|PWM值 %pwm|变化（快慢） %Gap|"
-    // //% weight=1
-    // //% blockGap=8
-    // //% color="#C814B8"
-    // //% h.min=0 h.max=3
-    // //% pwm.min=500 pwm.max=2500
-    // //% Gap.min=0 Gap.max=9
-    // //% name.fieldEditor="gridpicker" name.fieldOptions.columns=10
-    // export function 舵机(h: number, pwm: number,Gap: number){
-    //     usb_send_cnt_1 = 0;
+        ToSlaveBuf_1[SSLen - 1] = DaTail_1;//固定长度
 
-    //     ToSlaveBuf[usb_send_cnt_1++] = DaHeader; //头
-    //     ToSlaveBuf[usb_send_cnt_1++] = SSLen - 2; //固定长度
-    //     ToSlaveBuf[usb_send_cnt_1++] = 2;  //功能码
-
-    //     ToSlaveBuf[usb_send_cnt_1++] = h;
-    //     ToSlaveBuf[usb_send_cnt_1++] = pwm >> 8;
-    //     ToSlaveBuf[usb_send_cnt_1++] = (pwm << 8) >> 8;
-    //     ToSlaveBuf[usb_send_cnt_1++] = Gap;
-
-    //     ToSlaveBuf[SSLen - 1] = DaTail;//固定长度
-
-    //     SG_SPI_Send()
-    // }
+        SG_SPI_Send()
+    }
 }
