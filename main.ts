@@ -1,20 +1,19 @@
+let data = 0
+serial.redirect(
+SerialPin.P8,
+SerialPin.P12,
+BaudRate.BaudRate115200
+)
+moco_图像识别.图形识别初始化()
 moco_底盘模式.机器狗初始化()
-moco_底盘模式.机器人狗高度(9)
+moco_底盘模式.机器人狗高度(10)
 moco_底盘模式.机器狗启动()
-moco_底盘模式.机器狗步态(moco_底盘模式.gait.慢跑)
-moco_底盘模式.机器狗控制(moco_底盘模式.mode.前进, 9, 20)
-moco_底盘模式.机器狗控制(moco_底盘模式.mode.后退, 9, 20)
-moco_底盘模式.机器狗控制(moco_底盘模式.mode.前进, 0, 0)
-moco_底盘模式.机器狗控制(moco_底盘模式.mode.左转, 9, 20)
-moco_底盘模式.机器狗控制(moco_底盘模式.mode.右转, 9, 20)
-moco_底盘模式.机器狗控制(moco_底盘模式.mode.右转, 0, 0)
-moco_底盘模式.机器狗控制(moco_底盘模式.mode.左移, 9, 20)
-moco_底盘模式.机器狗控制(moco_底盘模式.mode.右移, 9, 20)
-moco_底盘模式.机器狗原地站立()
-moco_底盘模式.机器狗控制角度(moco_底盘模式.mode1.左摆, 9, 20)
-moco_底盘模式.机器狗控制角度(moco_底盘模式.mode1.右摆, 9, 20)
-moco_底盘模式.机器狗控制角度(moco_底盘模式.mode1.右摆, 0, 0)
-moco_底盘模式.机器狗控制角度(moco_底盘模式.mode1.俯视, 9, 20)
-moco_底盘模式.机器狗控制角度(moco_底盘模式.mode1.仰视, 9, 20)
-moco_底盘模式.机器狗控制角度(moco_底盘模式.mode1.俯视, 0, 0)
-moco_底盘模式.机器狗停止()
+basic.forever(function () {
+    moco_底盘模式.机器狗心跳()
+    data = moco_图像识别.识别二维码号(5)
+    if (data == 5) {
+        moco_底盘模式.机器狗步态(moco_底盘模式.gait.慢跑)
+    } else {
+        moco_底盘模式.机器狗原地站立()
+    }
+})
