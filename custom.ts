@@ -1334,6 +1334,9 @@ namespace moco_语音识别 {
 //俯卧撑
             case 0x19:  moco_底盘模式.机器狗数据清除()
                         moco_底盘模式.机器狗原地站立(); break
+//俯卧撑
+            case 0x1A: moco_底盘模式.机器狗数据清除()
+                        moco_底盘模式.机器狗停止; break
             default : return            
         }
     }
