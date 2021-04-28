@@ -1216,6 +1216,7 @@ namespace moco_图像识别 {
 namespace moco_语音识别 {
 
     let get_data = 0x00 //获取数据
+    let voice_speed = 7 //速度
 
     function speech_recognition_rx() {
         let rx_data = pins.createBuffer(4) //创建数组
@@ -1241,99 +1242,98 @@ namespace moco_语音识别 {
     function voice_data() {
         switch(get_data){
             case 0x002: moco_底盘模式.机器狗数据清除()
-                        moco_底盘模式.机器狗原地站立
+                        moco_底盘模式.机器狗原地站立()
                         //moco_底盘模式.机器狗步态(moco_底盘模式.gait.慢跑);
                         break
 
             case 0x003: moco_底盘模式.机器狗数据清除()
                         moco_底盘模式.机器狗步态(moco_底盘模式.gait.慢跑)
-                        moco_底盘模式.机器狗控制(moco_底盘模式.mode.前进, 7, 1);break
+                        moco_底盘模式.机器狗控制(moco_底盘模式.mode.前进, voice_speed, 1);break
 
             case 0x004: moco_底盘模式.机器狗数据清除()
                         moco_底盘模式.机器狗步态(moco_底盘模式.gait.慢跑)
-                        moco_底盘模式.机器狗控制(moco_底盘模式.mode.后退, 7, 1);break
+                        moco_底盘模式.机器狗控制(moco_底盘模式.mode.后退, voice_speed, 1);break
 
             case 0x005: moco_底盘模式.机器狗数据清除()
                         moco_底盘模式.机器狗步态(moco_底盘模式.gait.慢跑)
-                        moco_底盘模式.机器狗控制(moco_底盘模式.mode.左移, 7, 1);break
+                        moco_底盘模式.机器狗控制(moco_底盘模式.mode.左移, voice_speed, 1);break
 
             case 0x006: moco_底盘模式.机器狗数据清除()
                         moco_底盘模式.机器狗步态(moco_底盘模式.gait.慢跑)
-                        moco_底盘模式.机器狗控制(moco_底盘模式.mode.右移, 7, 1);break
+                        moco_底盘模式.机器狗控制(moco_底盘模式.mode.右移, voice_speed, 1);break
 
             case 0x007: moco_底盘模式.机器狗数据清除()
                         moco_底盘模式.机器狗步态(moco_底盘模式.gait.慢跑)
-                        moco_底盘模式.机器狗控制(moco_底盘模式.mode.左转, 7, 1);break
+                        moco_底盘模式.机器狗控制(moco_底盘模式.mode.左转, voice_speed, 1);break
 
             case 0x008: moco_底盘模式.机器狗数据清除()
                         moco_底盘模式.机器狗步态(moco_底盘模式.gait.慢跑)
-                        moco_底盘模式.机器狗控制(moco_底盘模式.mode.右转, 7, 1);break
+                        moco_底盘模式.机器狗控制(moco_底盘模式.mode.右转, voice_speed, 1);break
 
             case 0x009: moco_底盘模式.机器狗数据清除()
                         moco_底盘模式.机器狗步态(moco_底盘模式.gait.慢跑)
-                        moco_底盘模式.机器狗控制(moco_底盘模式.mode.前进, 7, 1)
-                        moco_底盘模式.机器狗控制(moco_底盘模式.mode.左移, 7, 1);break
+                        moco_底盘模式.机器狗控制(moco_底盘模式.mode.前进, voice_speed, 1)
+                        moco_底盘模式.机器狗控制(moco_底盘模式.mode.左移, voice_speed, 1);break
 
             case 0x00A: moco_底盘模式.机器狗数据清除()
                         moco_底盘模式.机器狗步态(moco_底盘模式.gait.慢跑)
-                        moco_底盘模式.机器狗控制(moco_底盘模式.mode.前进, 7, 1)
-                        moco_底盘模式.机器狗控制(moco_底盘模式.mode.右移, 7, 1);break
+                        moco_底盘模式.机器狗控制(moco_底盘模式.mode.前进, voice_speed, 1)
+                        moco_底盘模式.机器狗控制(moco_底盘模式.mode.右移, voice_speed, 1);break
 
             case 0x00B: moco_底盘模式.机器狗数据清除()
                         moco_底盘模式.机器狗步态(moco_底盘模式.gait.慢跑)
-                        moco_底盘模式.机器狗控制(moco_底盘模式.mode.后退, 7, 1)
-                        moco_底盘模式.机器狗控制(moco_底盘模式.mode.左移, 7, 1);break
+                        moco_底盘模式.机器狗控制(moco_底盘模式.mode.后退, voice_speed, 1)
+                        moco_底盘模式.机器狗控制(moco_底盘模式.mode.左移, voice_speed, 1);break
 
             case 0x00C: moco_底盘模式.机器狗数据清除()
                         moco_底盘模式.机器狗步态(moco_底盘模式.gait.慢跑)
-                        moco_底盘模式.机器狗控制(moco_底盘模式.mode.后退, 7, 1)
-                        moco_底盘模式.机器狗控制(moco_底盘模式.mode.右移, 7, 1);break
+                        moco_底盘模式.机器狗控制(moco_底盘模式.mode.后退, voice_speed, 1)
+                        moco_底盘模式.机器狗控制(moco_底盘模式.mode.右移, voice_speed, 1);break
 
             case 0x00D: moco_底盘模式.机器狗数据清除()
                         moco_底盘模式.机器狗原地站立
                         moco_底盘模式.机器狗控制角度(moco_底盘模式.mode1.俯视, 10, 1);break
 
-            case 0x00F: moco_底盘模式.机器狗数据清除()
+            case 0x00E: moco_底盘模式.机器狗数据清除()
                         moco_底盘模式.机器狗原地站立
                         moco_底盘模式.机器狗控制角度(moco_底盘模式.mode1.仰视, 10, 1);break
 
+            case 0x00F: moco_底盘模式.机器狗数据清除()
+                        moco_底盘模式.机器狗原地站立
+                        moco_底盘模式.机器狗控制角度(moco_底盘模式.mode1.左摆, 10, 1); break
+
             case 0x010: moco_底盘模式.机器狗数据清除()
                         moco_底盘模式.机器狗原地站立
-                        moco_底盘模式.机器狗控制角度(moco_底盘模式.mode1.左摆, 10, 1);break
-
-            case 0x11:  moco_底盘模式.机器狗数据清除()
-                        moco_底盘模式.机器狗原地站立
                         moco_底盘模式.机器狗控制角度(moco_底盘模式.mode1.右摆, 10, 1);break
+            //立正
+            case 0x11:  moco_底盘模式.机器狗数据清除()
+                        moco_底盘模式.机器狗原地站立();break   
 
             case 0x12:  moco_底盘模式.机器狗数据清除()
-                        moco_底盘模式.机器狗原地站立
+                        moco_底盘模式.机器狗原地站立()
                         moco_底盘模式.机器人狗高度(5);break
 
             case 0x13:  moco_底盘模式.机器狗数据清除()
-                        moco_底盘模式.机器狗原地站立
+                        moco_底盘模式.机器狗原地站立()
                         moco_底盘模式.机器人狗高度(0);break
-
+//快速踏步
             case 0x14:  moco_底盘模式.机器狗数据清除()
                         moco_底盘模式.机器狗步态(moco_底盘模式.gait.慢跑);break
-
+//慢速踏步
             case 0x15: moco_底盘模式.机器狗数据清除()
                         moco_底盘模式.机器狗步态(moco_底盘模式.gait.慢跑);break
-
+//加速
             case 0x16: moco_底盘模式.机器狗数据清除()
-                        moco_底盘模式.机器狗步态(moco_底盘模式.gait.慢跑)
-                        moco_底盘模式.机器狗控制(moco_底盘模式.mode.右移, 7, 1);break
-
+                       voice_speed = 10;break
+//减速
             case 0x17: moco_底盘模式.机器狗数据清除()
-                        moco_底盘模式.机器狗步态(moco_底盘模式.gait.慢跑)
-                        moco_底盘模式.机器狗控制(moco_底盘模式.mode.右移, 7, 1);break
-
+                        voice_speed = 7;break
+//握手
             case 0x18: moco_底盘模式.机器狗数据清除()
-                        moco_底盘模式.机器狗步态(moco_底盘模式.gait.慢跑)
-                        moco_底盘模式.机器狗控制(moco_底盘模式.mode.右移, 7, 1); break
-
+                       moco_底盘模式.机器狗原地站立(); break
+//俯卧撑
             case 0x19:  moco_底盘模式.机器狗数据清除()
-                        moco_底盘模式.机器狗步态(moco_底盘模式.gait.慢跑)
-                        moco_底盘模式.机器狗控制(moco_底盘模式.mode.右移, 7, 1); break
+                        moco_底盘模式.机器狗原地站立(); break
             default : return            
         }
     }
