@@ -47,7 +47,7 @@ function SPI_SPCP_Init() {
             pins.digitalWritePin(DigitalPin.P16, 1)
            // serial.writeBuffer(InfoTemp)
              SPI_unpacking()
-            basic.pause(200)
+            basic.pause(20)
         }    
     }
 
@@ -249,6 +249,21 @@ namespace moco_底盘模式 {
         SPI_SPCP_Init();
     }
 
+//机器狗数据清除
+//% block=MOCO.机器狗数据清除 block="机器狗数据清除"
+//%weight=1
+    export function 机器狗数据清除(): void {
+        //SPI_SPCP_Init();
+        //gait_mode = 0;
+        rc_spd_cmd_X = 0.00 //x速度
+        rc_spd_cmd_y = 0.00 //y速度
+        rc_att_rate_cmd = 0.00 // 速度
+        rc_spd_cmd_z = 0.00 //
+        //rc_pos_cmd = 0.00 //高度
+        rc_att_cmd_x = 0.00 //俯仰
+        rc_att_cmd_y = 0.00 //侧摆
+    }
+
 //机器狗高度设置
 //% block=MOCO.机器人狗高度 block="机器人狗|高度 %h"
 //%weight=3
@@ -290,7 +305,7 @@ namespace moco_底盘模式 {
     //%weight=2
     export function 机器狗心跳(): void {
         SPI_Send()
-        basic.pause(100)
+        //basic.pause(100)
     }
 
 //机器狗启动/停止    
@@ -306,6 +321,7 @@ namespace moco_底盘模式 {
         SPI_Send()
         basic.pause(50)
         SPI_Send()
+        state = 0
         
 
     }    
@@ -879,16 +895,26 @@ namespace moco_图像识别 {
     let Identify_TX = pins.createBuffer(10)
     let Identify_RX = pins.createBuffer(50)
     let cnt_p = 0
-
+    //二维码
     let Identify_x = 0x00, Identify_y = 0x00, Identify_z = 0x00
     let Identify_Flip_x = 0x00, Identify_Flip_y = 0x00, Identify_Flip_z = 0x00
     let Identify_status = 0x00, Identify_pattern = 0x00
+    //小球
+    let Ball_status = 0x00  //状态
+    let Ball_X = 0x00, Ball_Y = 0x00 //x轴、y轴
+    let Ball_W = 0x00, Ball_H = 0x00 //宽、高
+    let Ball_pixels = 0x00  //像素点数量
 
     let CRC_L =0x00
     let CRC_H =0x00
 
     let CRC_tx_L = 0x00
     let CRC_tx_H = 0x00
+
+    let Function_s = 0      //功能选着（1：二维码 2：小球）
+    let Function_c = 0x00   //功能码 
+
+
     //------------TX--------------
     //数据发送
     function Identify_send() {
@@ -896,7 +922,7 @@ namespace moco_图像识别 {
         Identify_TX[cnt_p++] = 0x01 // ID
         Identify_TX[cnt_p++] = 0x03
         Identify_TX[cnt_p++] = 0x00
-        Identify_TX[cnt_p++] = 0x04
+        Identify_TX[cnt_p++] = Function_c
         Identify_TX[cnt_p++] = 0x00
         Identify_TX[cnt_p++] = 0x08
         usMBCRC16(Identify_TX, cnt_p)
@@ -921,18 +947,20 @@ namespace moco_图像识别 {
         if (Identify_RX[0] == 0x01 && Identify_RX[1] < 0xFF){ 
             //basic.showNumber(1)
             length_r = Identify_RX[2]
+            //serial.writeNumber(length_r)
             usMBCRC16(Identify_RX, length_r +3)
             if (Identify_RX[length_r + 3] == CRC_H && Identify_RX[length_r + 4] == CRC_L){
-                //serial.writeNumber(Identify_RX[length_r + 3])
-                Identify_collection(Identify_RX)
-                
+                if (Function_s = 1)
+                    Identify_collection(Identify_RX)
+                if (Function_s = 2)
+                    Ball_rd(Identify_RX)
             }
          }
         
         return
     }
 
-    //数据获取
+    //二维码数据获取
     function Identify_collection(Identify_RX_1:any){
         //serial.writeBuffer(Identify_RX_1)
         let Identify_RX_2 = pins.createBuffer(50)
@@ -949,6 +977,21 @@ namespace moco_图像识别 {
         Identify_Flip_z = Data_conversion(Identify_RX_2[cnt_I++], Identify_RX_2[cnt_I++])   //
         //serial.writeNumber(Identify_x)
         //basic.showNumber(Identify_pattern)
+    }
+
+    //小球识别
+    function Ball_rd(Identify_RX_1: any){
+        let Identify_RX_2 = pins.createBuffer(50)
+        Identify_RX_2 = Identify_RX_1
+        let cnt_I = 3
+        //serial.writeBuffer(Identify_RX_2)
+        Ball_status = Data_conversion(Identify_RX_2[cnt_I++], Identify_RX_2[cnt_I++])
+        Ball_X = Data_conversion(Identify_RX_2[cnt_I++], Identify_RX_2[cnt_I++])
+        Ball_Y = Data_conversion(Identify_RX_2[cnt_I++], Identify_RX_2[cnt_I++])
+        Ball_W = Data_conversion(Identify_RX_2[cnt_I++], Identify_RX_2[cnt_I++])
+        Ball_H = Data_conversion(Identify_RX_2[cnt_I++], Identify_RX_2[cnt_I++])
+        Ball_pixels = Data_conversion(Identify_RX_2[cnt_I++], Identify_RX_2[cnt_I++])
+        //serial.writeNumber(Ball_X)
     }
 
     let aucCRCHi = [0x00, 0xC1, 0x81, 0x40, 0x01, 0xC0, 0x80, 0x41, 0x01, 0xC0, 0x80, 0x41,
@@ -1051,6 +1094,21 @@ namespace moco_图像识别 {
         Z轴翻转,
     }
 
+    //小球位置
+    export enum Ball_Position{
+        //% block="X轴"
+        X轴,
+        //% block="Y轴"
+        Y轴,
+        //% block="宽度值"
+        宽度值,
+        //% block="高度值"
+        高度值,
+        //% block="像素点"
+        像素点
+    }
+
+
     export enum enColor {
         //%  block="红色"
         Red,
@@ -1073,12 +1131,45 @@ namespace moco_图像识别 {
     //% A.min=1 A.max=6
     //% name.fieldEditor="gridpicker" name.fieldOptions.columns=10
     export function 识别二维码号(A: number): number {
+        Function_c = 0x04
+        Function_s = 1
         Identify_send()
         Identify_receive()
         if (A == Identify_pattern)
             return Identify_pattern
         return 0    
     }
+
+    //% block=MOCO.识别小球 block="识别小球 | %Color"
+    //%weight=3
+    //% name.fieldEditor="gridpicker" name.fieldOptions.columns=10
+    export function 识别小球(Color: enColor):number{
+        Function_c = 0x24
+        Function_s = 2
+        Identify_send()
+        Identify_receive()
+        return Ball_status
+    }
+
+    //% block=MOCO.识别小球返回值 block="识别小球返回值 | %Color"
+    //%weight=3
+    //% name.fieldEditor="gridpicker" name.fieldOptions.columns=10
+    export function 识别小球返回值(Position_B: Ball_Position):number{
+        Function_c = 0x24
+        Function_s = 2
+        Identify_send()
+        Identify_receive()
+        switch(Position_B){
+            case Ball_Position.X轴 : return Ball_X; break;
+            case Ball_Position.Y轴 : return Ball_Y; break;
+            case Ball_Position.宽度值 : return Ball_W; break;
+            case Ball_Position.高度值: return Ball_H; break;
+            case Ball_Position.像素点: return Ball_pixels; break;
+            default: return 255
+        }
+    }
+
+
 
     //% block=MOCO.图形识别初始化 block="图形识别初始化"
     //%weight=3
@@ -1087,11 +1178,11 @@ namespace moco_图像识别 {
         serial.setRxBufferSize(32)
     }
 
-    //% block=MOCO.位置返回值 block="位置返回值 | %A"
+    //% block=MOCO.二维码位置返回值 block="二维码位置返回值 | %A"
     //%weight=3
     //% A.min=0 A.max=6
     //% name.fieldEditor="gridpicker" name.fieldOptions.columns=10
-    export function 位置返回值(data: Position_value): number {
+    export function 二维码位置返回值(data: Position_value): number {
         Identify_send()
         Identify_receive()
         switch(data){
@@ -1116,4 +1207,168 @@ namespace moco_图像识别 {
  
     }
 
+}
+
+
+//#########################语音识别#######################
+//% color="#03AA74" weight=25 icon="\uf021" blockGap=8
+
+namespace moco_语音识别 {
+
+    let get_data = 0x00 //获取数据
+
+    function speech_recognition_rx() {
+        let rx_data = pins.createBuffer(4) //创建数组
+        //get_data = 0x00
+        rx_data = serial.readBuffer(0) //读取RX缓存中数据
+        //serial.writeBuffer(rx_data)
+        //basic.showNumber(rx_data[2])
+        if (rx_data[0] == 0xF4 && rx_data[1] == 0x06 && rx_data[3] == 0xff) {
+            get_data = rx_data[2]
+            //serial.writeNumber(get_data)
+            //basic.showNumber(get_data)
+        }
+    }
+
+//初始化
+    function speech_recognition_init() {
+        moco_底盘模式.机器狗初始化()
+        moco_底盘模式.机器人狗高度(10)
+        moco_底盘模式.机器狗启动()
+    }
+
+//语音数据
+    function voice_data() {
+        switch(get_data){
+            case 0x002: moco_底盘模式.机器狗数据清除()
+                        moco_底盘模式.机器狗原地站立
+                        //moco_底盘模式.机器狗步态(moco_底盘模式.gait.慢跑);
+                        break
+
+            case 0x003: moco_底盘模式.机器狗数据清除()
+                        moco_底盘模式.机器狗步态(moco_底盘模式.gait.慢跑)
+                        moco_底盘模式.机器狗控制(moco_底盘模式.mode.前进, 7, 1);break
+
+            case 0x004: moco_底盘模式.机器狗数据清除()
+                        moco_底盘模式.机器狗步态(moco_底盘模式.gait.慢跑)
+                        moco_底盘模式.机器狗控制(moco_底盘模式.mode.后退, 7, 1);break
+
+            case 0x005: moco_底盘模式.机器狗数据清除()
+                        moco_底盘模式.机器狗步态(moco_底盘模式.gait.慢跑)
+                        moco_底盘模式.机器狗控制(moco_底盘模式.mode.左移, 7, 1);break
+
+            case 0x006: moco_底盘模式.机器狗数据清除()
+                        moco_底盘模式.机器狗步态(moco_底盘模式.gait.慢跑)
+                        moco_底盘模式.机器狗控制(moco_底盘模式.mode.右移, 7, 1);break
+
+            case 0x007: moco_底盘模式.机器狗数据清除()
+                        moco_底盘模式.机器狗步态(moco_底盘模式.gait.慢跑)
+                        moco_底盘模式.机器狗控制(moco_底盘模式.mode.左转, 7, 1);break
+
+            case 0x008: moco_底盘模式.机器狗数据清除()
+                        moco_底盘模式.机器狗步态(moco_底盘模式.gait.慢跑)
+                        moco_底盘模式.机器狗控制(moco_底盘模式.mode.右转, 7, 1);break
+
+            case 0x009: moco_底盘模式.机器狗数据清除()
+                        moco_底盘模式.机器狗步态(moco_底盘模式.gait.慢跑)
+                        moco_底盘模式.机器狗控制(moco_底盘模式.mode.前进, 7, 1)
+                        moco_底盘模式.机器狗控制(moco_底盘模式.mode.左移, 7, 1);break
+
+            case 0x00A: moco_底盘模式.机器狗数据清除()
+                        moco_底盘模式.机器狗步态(moco_底盘模式.gait.慢跑)
+                        moco_底盘模式.机器狗控制(moco_底盘模式.mode.前进, 7, 1)
+                        moco_底盘模式.机器狗控制(moco_底盘模式.mode.右移, 7, 1);break
+
+            case 0x00B: moco_底盘模式.机器狗数据清除()
+                        moco_底盘模式.机器狗步态(moco_底盘模式.gait.慢跑)
+                        moco_底盘模式.机器狗控制(moco_底盘模式.mode.后退, 7, 1)
+                        moco_底盘模式.机器狗控制(moco_底盘模式.mode.左移, 7, 1);break
+
+            case 0x00C: moco_底盘模式.机器狗数据清除()
+                        moco_底盘模式.机器狗步态(moco_底盘模式.gait.慢跑)
+                        moco_底盘模式.机器狗控制(moco_底盘模式.mode.后退, 7, 1)
+                        moco_底盘模式.机器狗控制(moco_底盘模式.mode.右移, 7, 1);break
+
+            case 0x00D: moco_底盘模式.机器狗数据清除()
+                        moco_底盘模式.机器狗原地站立
+                        moco_底盘模式.机器狗控制角度(moco_底盘模式.mode1.俯视, 10, 1);break
+
+            case 0x00F: moco_底盘模式.机器狗数据清除()
+                        moco_底盘模式.机器狗原地站立
+                        moco_底盘模式.机器狗控制角度(moco_底盘模式.mode1.仰视, 10, 1);break
+
+            case 0x010: moco_底盘模式.机器狗数据清除()
+                        moco_底盘模式.机器狗原地站立
+                        moco_底盘模式.机器狗控制角度(moco_底盘模式.mode1.左摆, 10, 1);break
+
+            case 0x11:  moco_底盘模式.机器狗数据清除()
+                        moco_底盘模式.机器狗原地站立
+                        moco_底盘模式.机器狗控制角度(moco_底盘模式.mode1.右摆, 10, 1);break
+
+            case 0x12:  moco_底盘模式.机器狗数据清除()
+                        moco_底盘模式.机器狗原地站立
+                        moco_底盘模式.机器人狗高度(5);break
+
+            case 0x13:  moco_底盘模式.机器狗数据清除()
+                        moco_底盘模式.机器狗原地站立
+                        moco_底盘模式.机器人狗高度(0);break
+
+            case 0x14:  moco_底盘模式.机器狗数据清除()
+                        moco_底盘模式.机器狗步态(moco_底盘模式.gait.慢跑);break
+
+            case 0x15: moco_底盘模式.机器狗数据清除()
+                        moco_底盘模式.机器狗步态(moco_底盘模式.gait.慢跑);break
+
+            case 0x16: moco_底盘模式.机器狗数据清除()
+                        moco_底盘模式.机器狗步态(moco_底盘模式.gait.慢跑)
+                        moco_底盘模式.机器狗控制(moco_底盘模式.mode.右移, 7, 1);break
+
+            case 0x17: moco_底盘模式.机器狗数据清除()
+                        moco_底盘模式.机器狗步态(moco_底盘模式.gait.慢跑)
+                        moco_底盘模式.机器狗控制(moco_底盘模式.mode.右移, 7, 1);break
+
+            case 0x18: moco_底盘模式.机器狗数据清除()
+                        moco_底盘模式.机器狗步态(moco_底盘模式.gait.慢跑)
+                        moco_底盘模式.机器狗控制(moco_底盘模式.mode.右移, 7, 1); break
+
+            case 0x19:  moco_底盘模式.机器狗数据清除()
+                        moco_底盘模式.机器狗步态(moco_底盘模式.gait.慢跑)
+                        moco_底盘模式.机器狗控制(moco_底盘模式.mode.右移, 7, 1); break
+            default : return            
+        }
+    }
+
+    export enum voice_state{
+        //%  block="开启"
+        开启,
+        //%  block="关闭"
+        关闭,
+        //%  block="自定义"
+        自定义
+
+    }
+
+    //% block=MOCO.语音识别 block=" 语音识别 | %state"
+    //%weight=3
+    //% name.fieldEditor="gridpicker" name.fieldOptions.columns=10
+    export function 语音识别(state :voice_state):number {
+        switch(state){
+            case voice_state.关闭 :  return 0 ;break
+            case voice_state.自定义 : return get_data ;break
+        }
+        speech_recognition_rx()
+        voice_data()
+        return 1
+
+    }
+
+    //% block=MOCO.测试 block="测试"
+    //%weight=3
+    //% h.min=0.00 h.max=10.00
+    //% name.fieldEditor="gridpicker" name.fieldOptions.columns=10
+    export function 测试():number {
+        speech_recognition_rx();
+        //basic.showNumber(1)
+        return get_data
+    }
 }
