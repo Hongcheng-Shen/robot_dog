@@ -34,30 +34,30 @@ function SPI_SPCP_Init() {
 
 //#########################SPI数据发送/接收###############################
 //spi发送、接收
-    function SPI_Send() {
-        if (state == 1){
-            SPICom_Walk()
-            pins.digitalWritePin(DigitalPin.P16, 0)
-            pins.digitalWritePin(DigitalPin.P6, 0)
-            for (let i = 0; i < 200; i++);
-            for (let i = 0; i < SSLen; i++) {
-                InfoTemp[i] = pins.spiWrite(ToSlaveBuf[i])
-            }
-            pins.digitalWritePin(DigitalPin.P6, 1)
-            pins.digitalWritePin(DigitalPin.P16, 1)
-            //serial.writeBuffer(ToSlaveBuf)
-             SPI_unpacking()
-            basic.pause(20)
-        }    
+function SPI_Send() {
+    if (state == 1) {
+        SPICom_Walk()
+        pins.digitalWritePin(DigitalPin.P16, 0)
+        pins.digitalWritePin(DigitalPin.P6, 0)
+        for (let i = 0; i < 200; i++);
+        for (let i = 0; i < SSLen; i++) {
+            InfoTemp[i] = pins.spiWrite(ToSlaveBuf[i])
+        }
+        pins.digitalWritePin(DigitalPin.P6, 1)
+        pins.digitalWritePin(DigitalPin.P16, 1)
+        //serial.writeBuffer(ToSlaveBuf)
+        SPI_unpacking()
+        basic.pause(20)
     }
+}
 
-    // function Initial_data(){
-
-
-    // }   
+// function Initial_data(){
 
 
-function SPICom_Walk(){
+// }   
+
+
+function SPICom_Walk() {
     usb_send_cnt = 0
     let cnt_reg = 0
     let sum = 0
@@ -81,12 +81,12 @@ function SPICom_Walk(){
 
 let cnt = 0
 //数据的解析
-    function SPI_unpacking(){
-        cnt = 0
-        if (InfoTemp[0] == 0x2B && InfoTemp[2] == 0x80)
-            robot_mode = InfoTemp[3]
-        //serial.writeNumber(robot_mode)
-    }
+function SPI_unpacking() {
+    cnt = 0
+    if (InfoTemp[0] == 0x2B && InfoTemp[2] == 0x80)
+        robot_mode = InfoTemp[3]
+    //serial.writeNumber(robot_mode)
+}
 
 
 //#########################数据转换###########################
@@ -166,7 +166,7 @@ function get_float_hex(decString: number) {
 }
 
 //原地站立
-function Standing(){
+function Standing() {
     if (robot_mode == 1)
         return
     gait_mode = 5
@@ -187,7 +187,7 @@ function Standing(){
 
 //#########################底层功能选着模块#######################
 //% color="#C814B8" weight=25 icon="\uf1d4"
-namespace moco_底盘模式 {
+namespace 舵狗_底盘模式 {
     //运动模式选择
     export enum mode {
         //% block="前进"
@@ -235,24 +235,24 @@ namespace moco_底盘模式 {
         快跑
     }
 
-//机器狗反馈信息
-//% block=MOCO.机器狗状态反馈信息 block="机器狗状态反馈信息"
-//%weight=1
-    export function 机器狗状态反馈信息(): number {
+    //舵狗_反馈信息
+    //% block=舵狗.舵狗状态反馈信息 block="舵狗_状态反馈信息"
+    //%weight=1
+    export function 舵狗_状态反馈信息(): number {
         return robot_mode;
     }
 
-//机器狗初始化
-//% block=MOCO.机器狗初始化 block="机器狗初始化"
-//%weight=1
-    export function 机器狗初始化(): void {
+    //舵狗_初始化
+    //% block=舵狗.舵狗_狗初始化 block="舵狗_初始化"
+    //%weight=1
+    export function 舵狗_初始化(): void {
         SPI_SPCP_Init();
     }
 
-//机器狗数据清除
-//% block=MOCO.机器狗数据清除 block="机器狗数据清除"
-//%weight=1
-    export function 机器狗数据清除(): void {
+    //舵狗_数据清除
+    //% block=舵狗.舵狗_数据清除 block="舵狗_数据清除"
+    //%weight=1
+    export function 舵狗_数据清除(): void {
         //SPI_SPCP_Init();
         //gait_mode = 0;
         rc_spd_cmd_X = 0.00 //x速度
@@ -264,27 +264,27 @@ namespace moco_底盘模式 {
         rc_att_cmd_y = 0.00 //侧摆
     }
 
-//机器狗高度设置
-//% block=MOCO.机器狗高度 block="机器狗|高度 %h"
-//%weight=3
-//% h.min=0.00 h.max=10.00
-//% name.fieldEditor="gridpicker" name.fieldOptions.columns=10
-    export function 机器狗高度(h: number): void {
-          rc_pos_cmd = h * 0.01
-          SPI_Send()
+    //舵狗_高度设置
+    //% block=舵狗.舵狗_高度 block="舵狗_|高度 %h"
+    //%weight=3
+    //% h.min=0.00 h.max=10.00
+    //% name.fieldEditor="gridpicker" name.fieldOptions.columns=10
+    export function 舵狗_高度(h: number): void {
+        rc_pos_cmd = h * 0.01
+        SPI_Send()
     }
 
-//机器狗启动/停止    
-//% block=MOCO.机器狗启动 block="机器狗启动"
-//%weight=2
-    export function 机器狗启动(): void {
-         gait_mode = 4
-         state = 1
-         basic.pause(3000)
-        while(1){
+    //舵狗_启动/停止    
+    //% block=舵狗.舵狗_启动 block="舵狗_启动"
+    //%weight=2
+    export function 舵狗_启动(): void {
+        gait_mode = 4
+        state = 1
+        basic.pause(3000)
+        while (1) {
             SPI_Send()
-            if (robot_mode == 1){
-                for(let i =0;i < 2;i++){
+            if (robot_mode == 1) {
+                for (let i = 0; i < 2; i++) {
                     SPI_Send()
                     basic.pause(100)
                 }
@@ -293,50 +293,50 @@ namespace moco_底盘模式 {
         }
     }
 
-//机器狗原地站立
-//% block=MOCO.机器狗原地站立 block="机器狗原地站立"
-//%weight=2
-    export function 机器狗原地站立(): void {
-        Standing()
-    } 
-
-    //机器狗心跳
-    //% block=MOCO.机器狗心跳 block="机器狗心跳"
+    //舵狗_原地站立
+    //% block=舵狗.舵狗_原地站立 block="舵狗_原地站立"
     //%weight=2
-    export function 机器狗心跳(): void {
+    export function 舵狗_原地站立(): void {
+        Standing()
+    }
+
+    //舵狗_心跳
+    //% block=舵狗.舵狗_心跳 block="舵狗_心跳"
+    //%weight=2
+    export function 舵狗_心跳(): void {
         SPI_Send()
         //basic.pause(100)
     }
 
-//机器狗启动/停止    
-//% block=MOCO.机器狗停止 block="机器狗停止"
-//%weight=2
-    export function 机器狗停止(): void {
-        if (robot_mode == 4){
+    //舵狗_启动/停止    
+    //% block=舵狗.舵狗_停止 block="舵狗_停止"
+    //%weight=2
+    export function 舵狗_停止(): void {
+        if (robot_mode == 4) {
             Standing()
-            }
-        if(robot_mode == 1){
+        }
+        if (robot_mode == 1) {
             rc_pos_cmd = 0.01
         }
         SPI_Send()
         basic.pause(50)
         SPI_Send()
         state = 0
-        
 
-    }    
 
-//机器狗步态选着
-//% block=MOCO.机器狗步态 block="机器狗|步态 %g"
-//%weight=5
-//% name.fieldEditor="gridpicker" name.fieldOptions.columns=10
-    export function 机器狗步态(g: gait): void {
+    }
+
+    //舵狗_步态选着
+    //% block=舵狗.舵狗_步态 block="舵狗_|步态 %g"
+    //%weight=5
+    //% name.fieldEditor="gridpicker" name.fieldOptions.columns=10
+    export function 舵狗_步态(g: gait): void {
         switch (g) {
             case gait.慢跑:
-                gait_mode = 1; 
+                gait_mode = 1;
                 while (1) {
                     SPI_Send()
-                    if (robot_mode == 4){
+                    if (robot_mode == 4) {
                         SPI_Send()
                         //serial.writeNumber(2)
                         return
@@ -356,13 +356,13 @@ namespace moco_底盘模式 {
         SPI_Send()
     }
 
-//机器狗运动方向
-//% block=MOCO.机器狗控制 block="机器狗控制|  模式 %m|速度 %speed1|时间 %time1"
-//%weight=7
-//% speed1.min=0.00 speed1.max=10.00
-//% time1.min=0 time1.max=255
-//% name.fieldEditor="gridpicker" name.fieldOptions.columns=10
-    export function 机器狗控制(m: mode, speed1: number, time1: number): void {
+    //舵狗_运动方向
+    //% block=舵狗.舵狗_控制 block="舵狗_控制|  模式 %m|速度 %speed1|时间 %time1"
+    //%weight=7
+    //% speed1.min=0.00 speed1.max=10.00
+    //% time1.min=0 time1.max=255
+    //% name.fieldEditor="gridpicker" name.fieldOptions.columns=10
+    export function 舵狗_控制(m: mode, speed1: number, time1: number): void {
         let Sum_S = 0.00
         Sum_S = speed1 / 100.00
         SPI_Send()
@@ -376,9 +376,9 @@ namespace moco_底盘模式 {
             case mode.右转:
                 rc_att_rate_cmd = (-speed1 * 5); SPI_Send(); break;
             case mode.左移:
-                rc_spd_cmd_y = (-Sum_S); SPI_Send();  break;
+                rc_spd_cmd_y = (-Sum_S); SPI_Send(); break;
             case mode.右移:
-                rc_spd_cmd_y = Sum_S; SPI_Send();  break;
+                rc_spd_cmd_y = Sum_S; SPI_Send(); break;
         }
         for (let e = 0; e < time1; e++) {
             SPI_Send()
@@ -386,13 +386,13 @@ namespace moco_底盘模式 {
         }
     }
 
-//机器狗的运动角度选着
-//% block=MOCO.机器狗控制角度 block="机器狗控制角度| %m|角度 %speed1|时间 %time1"
-//%weight=7
-//% speed1.min=0.00 speed1.max=10.00
-//% time1.min=0 time1.max=255
-//% name.fieldEditor="gridpicker" name.fieldOptions.columns=10
-    export function 机器狗控制角度(m: mode1, speed1: number, time1: number): void {
+    //舵狗_的运动角度选着
+    //% block=舵狗.舵狗_控制角度 block="舵狗_控制角度| %m|角度 %speed1|时间 %time1"
+    //%weight=7
+    //% speed1.min=0.00 speed1.max=10.00
+    //% time1.min=0 time1.max=255
+    //% name.fieldEditor="gridpicker" name.fieldOptions.columns=10
+    export function 舵狗_控制角度(m: mode1, speed1: number, time1: number): void {
         switch (m) {
             case mode1.俯视:
                 rc_att_cmd_x = speed1; break;
@@ -417,8 +417,8 @@ namespace moco_底盘模式 {
 
 //#########################传感器功能#######################
 //% color="#A810B8" weight=25 icon="\uf1f4"
-namespace moco_传感器 {
-//红外    
+namespace 舵狗_传感器 {
+    //红外    
     export enum enObstacle {
         //%  block="障碍"
         Obstacle = 0,
@@ -426,7 +426,7 @@ namespace moco_传感器 {
         NoObstacle = 1
     }
 
-//红外    
+    //红外    
     export enum enObstacle1 {
         //%  block="有人"
         Obstacle = 500,
@@ -434,7 +434,7 @@ namespace moco_传感器 {
         NoObstacle = 0
     }
 
-//手势
+    //手势
     export enum Gesture_state {
         //% block="从左到右"
         right = 1,
@@ -455,7 +455,7 @@ namespace moco_传感器 {
         //% block="挥手"        
         wave = 256
     }
-//七彩灯
+    //七彩灯
     export enum enColor {
 
         //%  block="灭"
@@ -476,7 +476,7 @@ namespace moco_传感器 {
         Yellow,
 
     }
-//超声波
+    //超声波
     export enum PingUnit {
         //% block="μs"
         MicroSeconds,
@@ -486,12 +486,12 @@ namespace moco_传感器 {
         Inches
     }
 
-//超声波
-//% blockId=MOCO.超声波 block="超声波 |发射管脚 %trig|接收管脚 %echo|unit %unit"
-//% weight=96
-//% blockGap=20
-//% color="#228B22"
-//% name.fieldEditor="gridpicker" name.fieldOptions.columns=5
+    //超声波
+    //% blockId=舵狗.超声波 block="超声波 |发射管脚 %trig|接收管脚 %echo|unit %unit"
+    //% weight=96
+    //% blockGap=20
+    //% color="#228B22"
+    //% name.fieldEditor="gridpicker" name.fieldOptions.columns=5
     export function ping(trig: DigitalPin, echo: DigitalPin, unit: PingUnit, maxCmDistance = 500): number {
         // send pulse
         maxCmDistance = 500
@@ -514,34 +514,34 @@ namespace moco_传感器 {
 
 
 
-//红外
-//% block=MOCO.红外 block="红外|引脚 %pin|value %value "
-//% weight=96
-//% blockGap=20
-//% color="#228B22"
-//% name.fieldEditor="gridpicker" name.fieldOptions.columns=5
+    //红外
+    //% block=舵狗.红外 block="红外|引脚 %pin|value %value "
+    //% weight=96
+    //% blockGap=20
+    //% color="#228B22"
+    //% name.fieldEditor="gridpicker" name.fieldOptions.columns=5
     export function IR(pin: DigitalPin, value: enObstacle): boolean {
         pins.setPull(pin, PinPullMode.PullUp);
         return pins.digitalReadPin(pin) == value;
     }
 
-//红外
-//% block=MOCO.人体感应 block="人体感应|引脚 %pin|value %value "
-//% weight=96
-//% blockGap=20
-//% color="#228B22"
-//% name.fieldEditor="gridpicker" name.fieldOptions.columns=5
+    //红外
+    //% block=舵狗.人体感应 block="人体感应|引脚 %pin|value %value "
+    //% weight=96
+    //% blockGap=20
+    //% color="#228B22"
+    //% name.fieldEditor="gridpicker" name.fieldOptions.columns=5
     export function 人体(pin: AnalogPin, value: enObstacle1): number {
         let w = pins.analogReadPin(pin)
         if (w >= value)
             return 1
         // if(w)    
-            return 0   
+        return 0
 
     }
 
 
-//手势    
+    //手势    
     let Init_Register_Array = [
         [0xEF, 0x00],
         [0x37, 0x07],
@@ -716,7 +716,7 @@ namespace moco_传感器 {
     }
 
 
-    //% block=MOCO.手势 block="初始化手势识别（成功：0 失败：255）"
+    //% block=舵狗.手势 block="初始化手势识别（成功：0 失败：255）"
     //% color="#3CB371"
     export function GestureInit(): number {
         basic.pause(800);//等待芯片稳定
@@ -749,7 +749,7 @@ namespace moco_传感器 {
 
     }
 
-    //% block=MOCO.手势 block="获取手势识别结果值"
+    //% block=舵狗.手势 block="获取手势识别结果值"
     //% color="#3CB371"
     export function GetGesture(): number {
 
@@ -778,7 +778,7 @@ namespace moco_传感器 {
         return date;
     }
 
-    //% block=MOCO.手势 block="选择手势为| %state "
+    //% block=舵狗.手势 block="选择手势为| %state "
     //% color="#3CB371"
     export function 选择手势为(state: Gesture_state): number {
 
@@ -786,8 +786,8 @@ namespace moco_传感器 {
     }
 
 
-//七彩灯
-    //% block=MOCO.RGB block="RGB七彩灯|引脚R %pin1|引脚G %pin2|引脚B %pin3|显示 %value"
+    //七彩灯
+    //% block=舵狗.RGB block="RGB七彩灯|引脚R %pin1|引脚G %pin2|引脚B %pin3|显示 %value"
     //% weight=1
     //% blockGap=8
     //% color="#C814B8"
@@ -851,14 +851,14 @@ namespace moco_传感器 {
 
 //#########################舵机控制#######################
 //% color="#03AA74" weight=25 icon="\uf021" blockGap=8
-namespace moco_舵机控制{
+namespace 舵狗_舵机控制 {
     let ToSlaveBuf_1 = pins.createBuffer(SSLen)
     let InfoTemp_1 = pins.createBuffer(SSLen)
     let usb_send_cnt_1 = 0
     let SfoCnt_1 = 0
     let DaHeader_1 = 0x2B
     let DaTail_1 = 0xEE
- 
+
     function SG_SPI_Send() {
         pins.digitalWritePin(DigitalPin.P16, 0)
         pins.digitalWritePin(DigitalPin.P6, 0)
@@ -872,7 +872,7 @@ namespace moco_舵机控制{
         basic.pause(200)
     }
 
-    //% block=MOCO.舵机控制 block="舵机| 号 %h|PWM值 %pwm|变化（快慢） %Gap|"
+    //% block=舵狗.舵机控制 block="舵机| 号 %h|PWM值 %pwm|变化（快慢） %Gap|"
     //% weight=1
     //% blockGap=8
     //% color="#C814B8"
@@ -880,7 +880,7 @@ namespace moco_舵机控制{
     //% pwm.min=500 pwm.max=2500
     //% Gap.min=0 Gap.max=9
     //% name.fieldEditor="gridpicker" name.fieldOptions.columns=10
-    export function 舵机(h: number, pwm: number,Gap: number){
+    export function 舵机(h: number, pwm: number, Gap: number) {
         usb_send_cnt_1 = 0;
 
         ToSlaveBuf_1[usb_send_cnt_1++] = DaHeader_1; //头
@@ -900,7 +900,7 @@ namespace moco_舵机控制{
 
 //#########################图像识别#######################
 //% color="#080074" weight=25 icon="\uff21" blockGap=8
-namespace moco_图像识别 {
+namespace 舵狗_图像识别 {
     //------------定义--------------
     let Identify_TX = pins.createBuffer(10)
     let Identify_RX = pins.createBuffer(50)
@@ -915,8 +915,8 @@ namespace moco_图像识别 {
     let Ball_W = 0x00, Ball_H = 0x00 //宽、高
     let Ball_pixels = 0x00  //像素点数量
 
-    let CRC_L =0x00
-    let CRC_H =0x00
+    let CRC_L = 0x00
+    let CRC_H = 0x00
 
     let CRC_tx_L = 0x00
     let CRC_tx_H = 0x00
@@ -941,41 +941,41 @@ namespace moco_图像识别 {
         Identify_TX[cnt_p++] = CRC_tx_L
         serial.writeBuffer(Identify_TX)
         basic.pause(100)
-       
+
     }
     //------------RX--------------
     //数据接收
     function Identify_receive() {
         //serial.setRxBufferSize(32)
         let position_r = 0
-        let sum_r =0x00
+        let sum_r = 0x00
         let length_r = 0
         //let CRC_L = 0x00
         Identify_RX = serial.readBuffer(0)
         //serial.writeBuffer(Identify_RX)
         //basic.showNumber(Identify_RX[1])
-        if (Identify_RX[0] == 0x01 && Identify_RX[1] < 0xFF){ 
+        if (Identify_RX[0] == 0x01 && Identify_RX[1] < 0xFF) {
             //basic.showNumber(1)
             length_r = Identify_RX[2]
             //serial.writeNumber(length_r)
-            usMBCRC16(Identify_RX, length_r +3)
-            if (Identify_RX[length_r + 3] == CRC_H && Identify_RX[length_r + 4] == CRC_L){
+            usMBCRC16(Identify_RX, length_r + 3)
+            if (Identify_RX[length_r + 3] == CRC_H && Identify_RX[length_r + 4] == CRC_L) {
                 if (Function_s = 1)
                     Identify_collection(Identify_RX)
                 if (Function_s = 2)
                     Ball_rd(Identify_RX)
             }
-         }
-        
+        }
+
         return
     }
 
     //二维码数据获取
-    function Identify_collection(Identify_RX_1:any){
+    function Identify_collection(Identify_RX_1: any) {
         //serial.writeBuffer(Identify_RX_1)
         let Identify_RX_2 = pins.createBuffer(50)
         Identify_RX_2 = Identify_RX_1
-        let cnt_I =3
+        let cnt_I = 3
         Identify_status = Data_conversion(Identify_RX_2[cnt_I++], Identify_RX_2[cnt_I++])   //
         // serial.writeNumber(Identify_status)
         Identify_pattern = Data_conversion(Identify_RX_2[cnt_I++], Identify_RX_2[cnt_I++])  //
@@ -990,7 +990,7 @@ namespace moco_图像识别 {
     }
 
     //小球识别
-    function Ball_rd(Identify_RX_1: any){
+    function Ball_rd(Identify_RX_1: any) {
         let Identify_RX_2 = pins.createBuffer(50)
         Identify_RX_2 = Identify_RX_1
         let cnt_I = 3
@@ -1049,8 +1049,8 @@ namespace moco_图像识别 {
         0x44, 0x84, 0x85, 0x45, 0x87, 0x47, 0x46, 0x86, 0x82, 0x42, 0x43, 0x83,
         0x41, 0x81, 0x80, 0x40]
 
-//CRC校验
-    function usMBCRC16(pucFrame: any, usLen: number){
+    //CRC校验
+    function usMBCRC16(pucFrame: any, usLen: number) {
         // serial.writeNumber(usLen)
         // serial.writeBuffer(pucFrame)
         let Data_1 = pins.createBuffer(8)
@@ -1067,25 +1067,25 @@ namespace moco_图像识别 {
             ucCRCHi = aucCRCLo[iIndex]
         }
         Data_3 = ucCRCHi << 8 | ucCRCLo
-         CRC_L = Data_3 >> 8
-         CRC_H = Data_3 & 0x00ff
-         CRC_tx_L = Data_3 >> 8
-         CRC_tx_H = Data_3 & 0x00ff
-        
+        CRC_L = Data_3 >> 8
+        CRC_H = Data_3 & 0x00ff
+        CRC_tx_L = Data_3 >> 8
+        CRC_tx_H = Data_3 & 0x00ff
+
     }
-//CRC数据转化
-    function Data_conversion(data1:number,data2:number): number{
+    //CRC数据转化
+    function Data_conversion(data1: number, data2: number): number {
         let data3
         let data4 = 0xFFFF
-        if(data1>0x7F){
-            data3 = ((data1 << 8 | data2)-1)^data4
+        if (data1 > 0x7F) {
+            data3 = ((data1 << 8 | data2) - 1) ^ data4
             return -data3
         }
-        else{
-            data3 = (data1 << 8 )| data2
+        else {
+            data3 = (data1 << 8) | data2
             return data3
         }
-        
+
     }
 
     //位置值
@@ -1105,7 +1105,7 @@ namespace moco_图像识别 {
     }
 
     //小球位置
-    export enum Ball_Position{
+    export enum Ball_Position {
         //% block="X轴"
         X轴,
         //% block="Y轴"
@@ -1136,7 +1136,7 @@ namespace moco_图像识别 {
         Yellow,
     }
 
-    //% block=MOCO.识别二维码 block="识别二维码 | %A"
+    //% block=舵狗.识别二维码 block="识别二维码 | %A"
     //%weight=3
     //% A.min=1 A.max=6
     //% name.fieldEditor="gridpicker" name.fieldOptions.columns=10
@@ -1147,13 +1147,13 @@ namespace moco_图像识别 {
         Identify_receive()
         if (A == Identify_pattern)
             return Identify_pattern
-        return 0    
+        return 0
     }
 
-    //% block=MOCO.识别小球 block="识别小球 | %Color"
+    //% block=舵狗.识别小球 block="识别小球 | %Color"
     //%weight=3
     //% name.fieldEditor="gridpicker" name.fieldOptions.columns=10
-    export function 识别小球(Color: enColor):number{
+    export function 识别小球(Color: enColor): number {
         Function_c = 0x24
         Function_s = 2
         Identify_send()
@@ -1161,18 +1161,18 @@ namespace moco_图像识别 {
         return Ball_status
     }
 
-    //% block=MOCO.识别小球返回值 block="识别小球返回值 | %Color"
+    //% block=舵狗.识别小球返回值 block="识别小球返回值 | %Color"
     //%weight=3
     //% name.fieldEditor="gridpicker" name.fieldOptions.columns=10
-    export function 识别小球返回值(Position_B: Ball_Position):number{
+    export function 识别小球返回值(Position_B: Ball_Position): number {
         Function_c = 0x24
         Function_s = 2
         Identify_send()
         Identify_receive()
-        switch(Position_B){
-            case Ball_Position.X轴 : return Ball_X; break;
-            case Ball_Position.Y轴 : return Ball_Y; break;
-            case Ball_Position.宽度值 : return Ball_W; break;
+        switch (Position_B) {
+            case Ball_Position.X轴: return Ball_X; break;
+            case Ball_Position.Y轴: return Ball_Y; break;
+            case Ball_Position.宽度值: return Ball_W; break;
             case Ball_Position.高度值: return Ball_H; break;
             case Ball_Position.像素点: return Ball_pixels; break;
             default: return 255
@@ -1181,28 +1181,28 @@ namespace moco_图像识别 {
 
 
 
-    //% block=MOCO.图形识别初始化 block="图形识别初始化"
+    //% block=舵狗.图形识别初始化 block="图形识别初始化"
     //%weight=3
     //% name.fieldEditor="gridpicker" name.fieldOptions.columns=10
-    export function 图形识别初始化(){
+    export function 图形识别初始化() {
         serial.setRxBufferSize(32)
     }
 
-    //% block=MOCO.二维码位置返回值 block="二维码位置返回值 | %A"
+    //% block=舵狗.二维码位置返回值 block="二维码位置返回值 | %A"
     //%weight=3
     //% A.min=0 A.max=6
     //% name.fieldEditor="gridpicker" name.fieldOptions.columns=10
     export function 二维码位置返回值(data: Position_value): number {
         Identify_send()
         Identify_receive()
-        switch(data){
-            case Position_value.X轴: return  Identify_x;break;
+        switch (data) {
+            case Position_value.X轴: return Identify_x; break;
             case Position_value.Y轴: return Identify_x; break;
             case Position_value.Z轴: return Identify_x; break;
             case Position_value.X轴翻转: return Identify_x; break;
             case Position_value.Y轴翻转: return Identify_x; break;
             case Position_value.Z轴翻转: return Identify_x; break;
-            default : return 255
+            default: return 255
         }
     }
 }
@@ -1211,7 +1211,7 @@ namespace moco_图像识别 {
 //#########################语音识别#######################
 //% color="#04AA10" weight=25 icon="\uD053" blockGap=8
 
-namespace moco_语音识别 {
+namespace 舵狗_语音识别 {
 
     let get_data = 0x00 //获取数据
     let voice_speed = 7 //速度
@@ -1229,117 +1229,117 @@ namespace moco_语音识别 {
         }
     }
 
-//初始化
+    //初始化
     function speech_recognition_init() {
-        moco_底盘模式.机器狗初始化()
-        moco_底盘模式.机器狗高度(10)
-        moco_底盘模式.机器狗启动()
+        舵狗_底盘模式.舵狗_初始化()
+        舵狗_底盘模式.舵狗_高度(10)
+        舵狗_底盘模式.舵狗_启动()
     }
 
-//语音数据
+    //语音数据
     function voice_data() {
-        switch(get_data){
-            case 0x002: moco_底盘模式.机器狗数据清除()
-                        moco_底盘模式.机器狗原地站立()
-                        //moco_底盘模式.机器狗步态(moco_底盘模式.gait.慢跑);
-                        break
+        switch (get_data) {
+            case 0x002: 舵狗_底盘模式.舵狗_数据清除()
+                舵狗_底盘模式.舵狗_原地站立()
+                //舵狗_底盘模式.舵狗_步态(舵狗_底盘模式.gait.慢跑);
+                break
 
-            case 0x003: moco_底盘模式.机器狗数据清除()
-                        moco_底盘模式.机器狗步态(moco_底盘模式.gait.慢跑)
-                        moco_底盘模式.机器狗控制(moco_底盘模式.mode.前进, voice_speed, 1);break
+            case 0x003: 舵狗_底盘模式.舵狗_数据清除()
+                舵狗_底盘模式.舵狗_步态(舵狗_底盘模式.gait.慢跑)
+                舵狗_底盘模式.舵狗_控制(舵狗_底盘模式.mode.前进, voice_speed, 1); break
 
-            case 0x004: moco_底盘模式.机器狗数据清除()
-                        moco_底盘模式.机器狗步态(moco_底盘模式.gait.慢跑)
-                        moco_底盘模式.机器狗控制(moco_底盘模式.mode.后退, voice_speed, 1);break
+            case 0x004: 舵狗_底盘模式.舵狗_数据清除()
+                舵狗_底盘模式.舵狗_步态(舵狗_底盘模式.gait.慢跑)
+                舵狗_底盘模式.舵狗_控制(舵狗_底盘模式.mode.后退, voice_speed, 1); break
 
-            case 0x005: moco_底盘模式.机器狗数据清除()
-                        moco_底盘模式.机器狗步态(moco_底盘模式.gait.慢跑)
-                        moco_底盘模式.机器狗控制(moco_底盘模式.mode.左移, voice_speed, 1);break
+            case 0x005: 舵狗_底盘模式.舵狗_数据清除()
+                舵狗_底盘模式.舵狗_步态(舵狗_底盘模式.gait.慢跑)
+                舵狗_底盘模式.舵狗_控制(舵狗_底盘模式.mode.左移, voice_speed, 1); break
 
-            case 0x006: moco_底盘模式.机器狗数据清除()
-                        moco_底盘模式.机器狗步态(moco_底盘模式.gait.慢跑)
-                        moco_底盘模式.机器狗控制(moco_底盘模式.mode.右移, voice_speed, 1);break
+            case 0x006: 舵狗_底盘模式.舵狗_数据清除()
+                舵狗_底盘模式.舵狗_步态(舵狗_底盘模式.gait.慢跑)
+                舵狗_底盘模式.舵狗_控制(舵狗_底盘模式.mode.右移, voice_speed, 1); break
 
-            case 0x007: moco_底盘模式.机器狗数据清除()
-                        moco_底盘模式.机器狗步态(moco_底盘模式.gait.慢跑)
-                        moco_底盘模式.机器狗控制(moco_底盘模式.mode.左转, voice_speed, 1);break
+            case 0x007: 舵狗_底盘模式.舵狗_数据清除()
+                舵狗_底盘模式.舵狗_步态(舵狗_底盘模式.gait.慢跑)
+                舵狗_底盘模式.舵狗_控制(舵狗_底盘模式.mode.左转, voice_speed, 1); break
 
-            case 0x008: moco_底盘模式.机器狗数据清除()
-                        moco_底盘模式.机器狗步态(moco_底盘模式.gait.慢跑)
-                        moco_底盘模式.机器狗控制(moco_底盘模式.mode.右转, voice_speed, 1);break
+            case 0x008: 舵狗_底盘模式.舵狗_数据清除()
+                舵狗_底盘模式.舵狗_步态(舵狗_底盘模式.gait.慢跑)
+                舵狗_底盘模式.舵狗_控制(舵狗_底盘模式.mode.右转, voice_speed, 1); break
 
-            case 0x009: moco_底盘模式.机器狗数据清除()
-                        moco_底盘模式.机器狗步态(moco_底盘模式.gait.慢跑)
-                        moco_底盘模式.机器狗控制(moco_底盘模式.mode.前进, voice_speed, 1)
-                        moco_底盘模式.机器狗控制(moco_底盘模式.mode.左移, voice_speed, 1);break
+            case 0x009: 舵狗_底盘模式.舵狗_数据清除()
+                舵狗_底盘模式.舵狗_步态(舵狗_底盘模式.gait.慢跑)
+                舵狗_底盘模式.舵狗_控制(舵狗_底盘模式.mode.前进, voice_speed, 1)
+                舵狗_底盘模式.舵狗_控制(舵狗_底盘模式.mode.左移, voice_speed, 1); break
 
-            case 0x00A: moco_底盘模式.机器狗数据清除()
-                        moco_底盘模式.机器狗步态(moco_底盘模式.gait.慢跑)
-                        moco_底盘模式.机器狗控制(moco_底盘模式.mode.前进, voice_speed, 1)
-                        moco_底盘模式.机器狗控制(moco_底盘模式.mode.右移, voice_speed, 1);break
+            case 0x00A: 舵狗_底盘模式.舵狗_数据清除()
+                舵狗_底盘模式.舵狗_步态(舵狗_底盘模式.gait.慢跑)
+                舵狗_底盘模式.舵狗_控制(舵狗_底盘模式.mode.前进, voice_speed, 1)
+                舵狗_底盘模式.舵狗_控制(舵狗_底盘模式.mode.右移, voice_speed, 1); break
 
-            case 0x00B: moco_底盘模式.机器狗数据清除()
-                        moco_底盘模式.机器狗步态(moco_底盘模式.gait.慢跑)
-                        moco_底盘模式.机器狗控制(moco_底盘模式.mode.后退, voice_speed, 1)
-                        moco_底盘模式.机器狗控制(moco_底盘模式.mode.左移, voice_speed, 1);break
+            case 0x00B: 舵狗_底盘模式.舵狗_数据清除()
+                舵狗_底盘模式.舵狗_步态(舵狗_底盘模式.gait.慢跑)
+                舵狗_底盘模式.舵狗_控制(舵狗_底盘模式.mode.后退, voice_speed, 1)
+                舵狗_底盘模式.舵狗_控制(舵狗_底盘模式.mode.左移, voice_speed, 1); break
 
-            case 0x00C: moco_底盘模式.机器狗数据清除()
-                        moco_底盘模式.机器狗步态(moco_底盘模式.gait.慢跑)
-                        moco_底盘模式.机器狗控制(moco_底盘模式.mode.后退, voice_speed, 1)
-                        moco_底盘模式.机器狗控制(moco_底盘模式.mode.右移, voice_speed, 1);break
+            case 0x00C: 舵狗_底盘模式.舵狗_数据清除()
+                舵狗_底盘模式.舵狗_步态(舵狗_底盘模式.gait.慢跑)
+                舵狗_底盘模式.舵狗_控制(舵狗_底盘模式.mode.后退, voice_speed, 1)
+                舵狗_底盘模式.舵狗_控制(舵狗_底盘模式.mode.右移, voice_speed, 1); break
 
-            case 0x00D: moco_底盘模式.机器狗数据清除()
-                        moco_底盘模式.机器狗原地站立
-                        moco_底盘模式.机器狗控制角度(moco_底盘模式.mode1.俯视, 10, 1);break
+            case 0x00D: 舵狗_底盘模式.舵狗_数据清除()
+                舵狗_底盘模式.舵狗_原地站立
+                舵狗_底盘模式.舵狗_控制角度(舵狗_底盘模式.mode1.俯视, 10, 1); break
 
-            case 0x00E: moco_底盘模式.机器狗数据清除()
-                        moco_底盘模式.机器狗原地站立
-                        moco_底盘模式.机器狗控制角度(moco_底盘模式.mode1.仰视, 10, 1);break
+            case 0x00E: 舵狗_底盘模式.舵狗_数据清除()
+                舵狗_底盘模式.舵狗_原地站立
+                舵狗_底盘模式.舵狗_控制角度(舵狗_底盘模式.mode1.仰视, 10, 1); break
 
-            case 0x00F: moco_底盘模式.机器狗数据清除()
-                        moco_底盘模式.机器狗原地站立
-                        moco_底盘模式.机器狗控制角度(moco_底盘模式.mode1.左摆, 10, 1); break
+            case 0x00F: 舵狗_底盘模式.舵狗_数据清除()
+                舵狗_底盘模式.舵狗_原地站立
+                舵狗_底盘模式.舵狗_控制角度(舵狗_底盘模式.mode1.左摆, 10, 1); break
 
-            case 0x010: moco_底盘模式.机器狗数据清除()
-                        moco_底盘模式.机器狗原地站立
-                        moco_底盘模式.机器狗控制角度(moco_底盘模式.mode1.右摆, 10, 1);break
-//立正
-            case 0x11:  moco_底盘模式.机器狗数据清除()
-                        moco_底盘模式.机器狗原地站立();break   
+            case 0x010: 舵狗_底盘模式.舵狗_数据清除()
+                舵狗_底盘模式.舵狗_原地站立
+                舵狗_底盘模式.舵狗_控制角度(舵狗_底盘模式.mode1.右摆, 10, 1); break
+            //立正
+            case 0x11: 舵狗_底盘模式.舵狗_数据清除()
+                舵狗_底盘模式.舵狗_原地站立(); break
 
-            case 0x12:  moco_底盘模式.机器狗数据清除()
-                        moco_底盘模式.机器狗原地站立()
-                        moco_底盘模式.机器狗高度(5);break
+            case 0x12: 舵狗_底盘模式.舵狗_数据清除()
+                舵狗_底盘模式.舵狗_原地站立()
+                舵狗_底盘模式.舵狗_高度(5); break
 
-            case 0x13:  moco_底盘模式.机器狗数据清除()
-                        moco_底盘模式.机器狗原地站立()
-                        moco_底盘模式.机器狗高度(0);break
-//快速踏步
-            case 0x14:  moco_底盘模式.机器狗数据清除()
-                        moco_底盘模式.机器狗步态(moco_底盘模式.gait.慢跑);break
-//慢速踏步
-            case 0x15: moco_底盘模式.机器狗数据清除()
-                        moco_底盘模式.机器狗步态(moco_底盘模式.gait.慢跑);break
-//加速
-            case 0x16: moco_底盘模式.机器狗数据清除()
-                       voice_speed = 10;break
-//减速
-            case 0x17: moco_底盘模式.机器狗数据清除()
-                        voice_speed = 7;break
-//握手
-            case 0x18: moco_底盘模式.机器狗数据清除()
-                       moco_底盘模式.机器狗原地站立(); break
-//俯卧撑
-            case 0x19:  moco_底盘模式.机器狗数据清除()
-                        moco_底盘模式.机器狗原地站立(); break
-//俯卧撑
-            case 0x1A: moco_底盘模式.机器狗数据清除()
-                        moco_底盘模式.机器狗停止; break
-            default : return            
+            case 0x13: 舵狗_底盘模式.舵狗_数据清除()
+                舵狗_底盘模式.舵狗_原地站立()
+                舵狗_底盘模式.舵狗_高度(0); break
+            //快速踏步
+            case 0x14: 舵狗_底盘模式.舵狗_数据清除()
+                舵狗_底盘模式.舵狗_步态(舵狗_底盘模式.gait.慢跑); break
+            //慢速踏步
+            case 0x15: 舵狗_底盘模式.舵狗_数据清除()
+                舵狗_底盘模式.舵狗_步态(舵狗_底盘模式.gait.慢跑); break
+            //加速
+            case 0x16: 舵狗_底盘模式.舵狗_数据清除()
+                voice_speed = 10; break
+            //减速
+            case 0x17: 舵狗_底盘模式.舵狗_数据清除()
+                voice_speed = 7; break
+            //握手
+            case 0x18: 舵狗_底盘模式.舵狗_数据清除()
+                舵狗_底盘模式.舵狗_原地站立(); break
+            //俯卧撑
+            case 0x19: 舵狗_底盘模式.舵狗_数据清除()
+                舵狗_底盘模式.舵狗_原地站立(); break
+            //俯卧撑
+            case 0x1A: 舵狗_底盘模式.舵狗_数据清除()
+                舵狗_底盘模式.舵狗_停止; break
+            default: return
         }
     }
 
-    export enum voice_state{
+    export enum voice_state {
         //%  block="开启"
         开启,
         //%  block="关闭"
@@ -1349,13 +1349,13 @@ namespace moco_语音识别 {
 
     }
 
-    //% block=MOCO.语音识别 block=" 语音识别 | %state"
+    //% block=舵狗.语音识别 block=" 语音识别 | %state"
     //%weight=3
     //% name.fieldEditor="gridpicker" name.fieldOptions.columns=10
-    export function 语音识别(state :voice_state):number {
-        switch(state){
-            case voice_state.关闭 :  return 0 ;break
-            case voice_state.自定义 : return get_data ;break
+    export function 语音识别(state: voice_state): number {
+        switch (state) {
+            case voice_state.关闭: return 0; break
+            case voice_state.自定义: return get_data; break
         }
         speech_recognition_rx()
         voice_data()
