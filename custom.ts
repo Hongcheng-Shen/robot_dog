@@ -45,7 +45,7 @@ function SPI_SPCP_Init() {
             }
             pins.digitalWritePin(DigitalPin.P6, 1)
             pins.digitalWritePin(DigitalPin.P16, 1)
-           // serial.writeBuffer(InfoTemp)
+            //serial.writeBuffer(ToSlaveBuf)
              SPI_unpacking()
             basic.pause(20)
         }    
@@ -265,11 +265,11 @@ namespace moco_底盘模式 {
     }
 
 //机器狗高度设置
-//% block=MOCO.机器人狗高度 block="机器人狗|高度 %h"
+//% block=MOCO.机器狗高度 block="机器狗|高度 %h"
 //%weight=3
 //% h.min=0.00 h.max=10.00
 //% name.fieldEditor="gridpicker" name.fieldOptions.columns=10
-    export function 机器人狗高度(h: number): void {
+    export function 机器狗高度(h: number): void {
           rc_pos_cmd = h * 0.01
           SPI_Send()
     }
@@ -342,6 +342,16 @@ namespace moco_底盘模式 {
                         return
                     }
                 }
+            case gait.快跑:
+                gait_mode = 2;
+                while (1) {
+                    SPI_Send()
+                    if (robot_mode == 5) {
+                        SPI_Send()
+                        //serial.writeNumber(2)
+                        return
+                    }
+                }
         }
         SPI_Send()
     }
@@ -406,7 +416,7 @@ namespace moco_底盘模式 {
 
 
 //#########################传感器功能#######################
-//% color="#A810B8" weight=25 icon="\uf1E4"
+//% color="#A810B8" weight=25 icon="\uf1f4"
 namespace moco_传感器 {
 //红外    
     export enum enObstacle {
@@ -889,7 +899,7 @@ namespace moco_舵机控制{
 }
 
 //#########################图像识别#######################
-//% color="#03AA74" weight=25 icon="\uf021" blockGap=8
+//% color="#080074" weight=25 icon="\uff21" blockGap=8
 namespace moco_图像识别 {
     //------------定义--------------
     let Identify_TX = pins.createBuffer(10)
@@ -1195,23 +1205,11 @@ namespace moco_图像识别 {
             default : return 255
         }
     }
-
-
-    //% block=MOCO.测试 block="测试"
-    //%weight=3
-    //% h.min=0.00 h.max=10.00
-    //% name.fieldEditor="gridpicker" name.fieldOptions.columns=10
-    export function 测试() {
-        Identify_send()
-        Identify_receive()
- 
-    }
-
 }
 
 
 //#########################语音识别#######################
-//% color="#03AA74" weight=25 icon="\uf021" blockGap=8
+//% color="#04AA10" weight=25 icon="\uD053" blockGap=8
 
 namespace moco_语音识别 {
 
@@ -1234,7 +1232,7 @@ namespace moco_语音识别 {
 //初始化
     function speech_recognition_init() {
         moco_底盘模式.机器狗初始化()
-        moco_底盘模式.机器人狗高度(10)
+        moco_底盘模式.机器狗高度(10)
         moco_底盘模式.机器狗启动()
     }
 
@@ -1305,17 +1303,17 @@ namespace moco_语音识别 {
             case 0x010: moco_底盘模式.机器狗数据清除()
                         moco_底盘模式.机器狗原地站立
                         moco_底盘模式.机器狗控制角度(moco_底盘模式.mode1.右摆, 10, 1);break
-            //立正
+//立正
             case 0x11:  moco_底盘模式.机器狗数据清除()
                         moco_底盘模式.机器狗原地站立();break   
 
             case 0x12:  moco_底盘模式.机器狗数据清除()
                         moco_底盘模式.机器狗原地站立()
-                        moco_底盘模式.机器人狗高度(5);break
+                        moco_底盘模式.机器狗高度(5);break
 
             case 0x13:  moco_底盘模式.机器狗数据清除()
                         moco_底盘模式.机器狗原地站立()
-                        moco_底盘模式.机器人狗高度(0);break
+                        moco_底盘模式.机器狗高度(0);break
 //快速踏步
             case 0x14:  moco_底盘模式.机器狗数据清除()
                         moco_底盘模式.机器狗步态(moco_底盘模式.gait.慢跑);break
@@ -1362,16 +1360,5 @@ namespace moco_语音识别 {
         speech_recognition_rx()
         voice_data()
         return 1
-
-    }
-
-    //% block=MOCO.测试 block="测试"
-    //%weight=3
-    //% h.min=0.00 h.max=10.00
-    //% name.fieldEditor="gridpicker" name.fieldOptions.columns=10
-    export function 测试():number {
-        speech_recognition_rx();
-        //basic.showNumber(1)
-        return get_data
     }
 }
