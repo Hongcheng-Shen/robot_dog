@@ -45,7 +45,7 @@ function SPI_Send() {
         }
         pins.digitalWritePin(DigitalPin.P6, 1)
         pins.digitalWritePin(DigitalPin.P16, 1)
-        //serial.writeBuffer(ToSlaveBuf)
+        serial.writeBuffer(ToSlaveBuf)
         SPI_unpacking()
         basic.pause(20)
     }
@@ -312,7 +312,7 @@ namespace 舵狗_底盘模式 {
     //% block=舵狗.舵狗_停止 block="舵狗_停止"
     //%weight=2
     export function 舵狗_停止(): void {
-        if (robot_mode == 4) {
+        if (robot_mode == 13) {
             Standing()
         }
         if (robot_mode == 1) {
@@ -336,7 +336,7 @@ namespace 舵狗_底盘模式 {
                 gait_mode = 1;
                 while (1) {
                     SPI_Send()
-                    if (robot_mode == 4) {
+                    if (robot_mode == 13) {
                         SPI_Send()
                         //serial.writeNumber(2)
                         return
@@ -399,9 +399,17 @@ namespace 舵狗_底盘模式 {
             case mode1.仰视:
                 rc_att_cmd_x = (-speed1); break;
             case mode1.左摆:
-                rc_att_cmd_y = speed1; break;
+                if(speed1==0){
+                    rc_att_cmd_y = 0; break;}
+                else{    
+                    rc_att_cmd_y = speed1+10; break;}
             case mode1.右摆:
-                rc_att_cmd_y = (-speed1); break;
+                if (speed1 == 0) {
+                    rc_att_cmd_y = 0; break;
+                }
+                else {
+                    rc_att_cmd_y = (-speed1) - 10; break;
+                }
             case mode1.航向角:
                 rc_att_cmd = speed1; break;
         }
