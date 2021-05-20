@@ -11,6 +11,7 @@ let rc_att_cmd_x = 0.00 //俯仰
 let rc_att_cmd_y = 0.00 //侧摆
 let rc_att_cmd = 0.00 //航向角
 let robot_mode = 0
+let robot_mode_1 = 0
 let state = 0
 
 //SPI
@@ -45,9 +46,10 @@ function SPI_Send() {
         }
         pins.digitalWritePin(DigitalPin.P6, 1)
         pins.digitalWritePin(DigitalPin.P16, 1)
-        serial.writeBuffer(ToSlaveBuf)
+        //serial.writeBuffer(InfoTemp)
+        //serial.writeBuffer(ToSlaveBuf)
         SPI_unpacking()
-        basic.pause(20)
+        basic.pause(100)
     }
 }
 
@@ -174,7 +176,7 @@ function Standing() {
         SPI_Send()
         // serial.writeNumber(9)
         // serial.writeNumber(robot_mode)
-        if (robot_mode == 1) {
+        if (robot_mode == 1 || robot_mode == 0x02) {
             gait_mode = 4
             SPI_Send()
             //serial.writeNumber(10)
@@ -229,10 +231,12 @@ namespace 舵狗_底盘模式 {
     }
     //步态选择
     export enum gait {
-        //% block="慢跑"
-        慢跑,
+        //% block="小跑"
+        小跑,
         //% block="快跑"
-        快跑
+        快跑,
+        //% block="爬行"
+        爬行
     }
 
     //舵狗_反馈信息
@@ -249,10 +253,10 @@ namespace 舵狗_底盘模式 {
         SPI_SPCP_Init();
     }
 
-    //舵狗_数据清除
-    //% block=舵狗.舵狗_数据清除 block="舵狗_数据清除"
+    //舵狗_复位
+    //% block=舵狗.舵狗_复位 block="舵狗_复位"
     //%weight=1
-    export function 舵狗_数据清除(): void {
+    export function 舵狗_复位(): void {
         //SPI_SPCP_Init();
         //gait_mode = 0;
         rc_spd_cmd_X = 0.00 //x速度
@@ -300,6 +304,23 @@ namespace 舵狗_底盘模式 {
         Standing()
     }
 
+    //舵狗_摔倒自恢复
+    //% block=舵狗_摔倒自恢复 block="舵狗_摔倒自恢复"
+    //%weight=2
+    export function 舵狗_摔倒自恢复(): void {
+        if (robot_mode != 0x08)
+            return
+        if(robot_mode == 0x08){
+            gait_mode = 0x07
+            SPI_Send()
+            robot_mode_1 = robot_mode
+            while (robot_mode_1 != 0x07){
+                return
+            }
+        }
+    }
+
+
     //舵狗_心跳
     //% block=舵狗.舵狗_心跳 block="舵狗_心跳"
     //%weight=2
@@ -315,15 +336,13 @@ namespace 舵狗_底盘模式 {
         if (robot_mode == 13) {
             Standing()
         }
-        if (robot_mode == 1) {
+        if (robot_mode == 1 || robot_mode == 0X02) {
             rc_pos_cmd = 0.01
         }
         SPI_Send()
         basic.pause(50)
         SPI_Send()
         state = 0
-
-
     }
 
     //舵狗_步态选着
@@ -332,8 +351,8 @@ namespace 舵狗_底盘模式 {
     //% name.fieldEditor="gridpicker" name.fieldOptions.columns=10
     export function 舵狗_步态(g: gait): void {
         switch (g) {
-            case gait.慢跑:
-                gait_mode = 1;
+            case gait.小跑:
+                gait_mode = 0x01;
                 while (1) {
                     SPI_Send()
                     if (robot_mode == 13) {
@@ -342,11 +361,21 @@ namespace 舵狗_底盘模式 {
                         return
                     }
                 }
-            case gait.快跑:
-                gait_mode = 2;
+            case gait.爬行:
+                gait_mode = 0x03;
                 while (1) {
                     SPI_Send()
-                    if (robot_mode == 5) {
+                    if (robot_mode == 6) {
+                        SPI_Send()
+                        //serial.writeNumber(2)
+                        return
+                    }
+                }
+            case gait.快跑:
+                gait_mode = 0x02;
+                while (1) {
+                    SPI_Send()
+                    if (robot_mode == 13) {
                         SPI_Send()
                         //serial.writeNumber(2)
                         return
@@ -359,7 +388,7 @@ namespace 舵狗_底盘模式 {
     //舵狗_运动方向
     //% block=舵狗.舵狗_控制 block="舵狗_控制|  模式 %m|速度 %speed1|时间 %time1"
     //%weight=7
-    //% speed1.min=0.00 speed1.max=10.00
+    //% speed1.min=0.00 speed1.max=100.00
     //% time1.min=0 time1.max=255
     //% name.fieldEditor="gridpicker" name.fieldOptions.columns=10
     export function 舵狗_控制(m: mode, speed1: number, time1: number): void {
@@ -373,8 +402,10 @@ namespace 舵狗_底盘模式 {
                 rc_spd_cmd_X = (-Sum_S); SPI_Send(); break;
             case mode.左转:
                 rc_att_rate_cmd = (speed1 * 5); SPI_Send(); break;
+                //rc_att_rate_cmd = speed1; SPI_Send(); break;
             case mode.右转:
                 rc_att_rate_cmd = (-speed1 * 5); SPI_Send(); break;
+                //rc_att_rate_cmd = -speed1; SPI_Send(); break;
             case mode.左移:
                 rc_spd_cmd_y = (-Sum_S); SPI_Send(); break;
             case mode.右移:
@@ -382,7 +413,7 @@ namespace 舵狗_底盘模式 {
         }
         for (let e = 0; e < time1; e++) {
             SPI_Send()
-            basic.pause(100)
+            //basic.pause(50)
         }
     }
 
@@ -415,7 +446,7 @@ namespace 舵狗_底盘模式 {
         }
         for (let e = 0; e < time1; e++) {
             SPI_Send()
-            basic.pause(100)
+            //basic.pause(50)
         }
     }
 
@@ -913,15 +944,23 @@ namespace 舵狗_图像识别 {
     let Identify_TX = pins.createBuffer(10)
     let Identify_RX = pins.createBuffer(50)
     let cnt_p = 0
+    
     //二维码
     let Identify_x = 0x00, Identify_y = 0x00, Identify_z = 0x00
     let Identify_Flip_x = 0x00, Identify_Flip_y = 0x00, Identify_Flip_z = 0x00
     let Identify_status = 0x00, Identify_pattern = 0x00
+    
     //小球
     let Ball_status = 0x00  //状态
     let Ball_X = 0x00, Ball_Y = 0x00 //x轴、y轴
     let Ball_W = 0x00, Ball_H = 0x00 //宽、高
     let Ball_pixels = 0x00  //像素点数量
+
+    //巡线
+    let Line_detect = 0x00 //检测
+    let Line_effect = 0x00 //识别线的效果
+    let Line_angle  = 0x00 //角度
+    let Line_position = 0x00 //位置
 
     let CRC_L = 0x00
     let CRC_H = 0x00
@@ -929,7 +968,7 @@ namespace 舵狗_图像识别 {
     let CRC_tx_L = 0x00
     let CRC_tx_H = 0x00
 
-    let Function_s = 0      //功能选着（1：二维码 2：小球）
+    let Function_s = 0      //功能选着（1：二维码 2：小球 3:巡线）
     let Function_c = 0x00   //功能码 
 
 
@@ -948,7 +987,7 @@ namespace 舵狗_图像识别 {
         Identify_TX[cnt_p++] = CRC_tx_H
         Identify_TX[cnt_p++] = CRC_tx_L
         serial.writeBuffer(Identify_TX)
-        basic.pause(100)
+        basic.pause(10)
 
     }
     //------------RX--------------
@@ -968,10 +1007,12 @@ namespace 舵狗_图像识别 {
             //serial.writeNumber(length_r)
             usMBCRC16(Identify_RX, length_r + 3)
             if (Identify_RX[length_r + 3] == CRC_H && Identify_RX[length_r + 4] == CRC_L) {
-                if (Function_s = 1)
-                    Identify_collection(Identify_RX)
-                if (Function_s = 2)
-                    Ball_rd(Identify_RX)
+                switch (Function_s){
+                    case 1: Identify_collection(Identify_RX);break;
+                    case 2: Ball_rd(Identify_RX); break;
+                    case 3: Line_inspection(Identify_RX);break;
+                    default: return 
+                }
             }
         }
 
@@ -1010,6 +1051,16 @@ namespace 舵狗_图像识别 {
         Ball_H = Data_conversion(Identify_RX_2[cnt_I++], Identify_RX_2[cnt_I++])
         Ball_pixels = Data_conversion(Identify_RX_2[cnt_I++], Identify_RX_2[cnt_I++])
         //serial.writeNumber(Ball_X)
+    }
+    //巡线识别
+    function Line_inspection(Identify_RX_1: any){
+        let Identify_RX_2 = pins.createBuffer(50)
+        Identify_RX_2 = Identify_RX_1
+        let cnt_I = 3
+        Line_detect = Data_conversion(Identify_RX_2[cnt_I++], Identify_RX_2[cnt_I++]) //检测
+        Line_effect = Data_conversion(Identify_RX_2[cnt_I++], Identify_RX_2[cnt_I++]) //识别线的效果
+        Line_angle =  Data_conversion(Identify_RX_2[cnt_I++], Identify_RX_2[cnt_I++]) //角度
+        Line_position = Data_conversion(Identify_RX_2[cnt_I++], Identify_RX_2[cnt_I++])//位置
     }
 
     let aucCRCHi = [0x00, 0xC1, 0x81, 0x40, 0x01, 0xC0, 0x80, 0x41, 0x01, 0xC0, 0x80, 0x41,
@@ -1096,6 +1147,20 @@ namespace 舵狗_图像识别 {
 
     }
 
+    //巡线识别
+    function Line_pi(){
+        Function_c = 0x40
+        Function_s = 3
+        Identify_send()
+        Identify_receive()
+        //  if(Line_detect == 1){
+        // //     rc_att_rate_cmd = Line_angle
+        //      rc_spd_cmd_y = Line_position
+        //  }
+        
+    }
+
+
     //位置值
     export enum Position_value {
         //% block="X轴"
@@ -1166,7 +1231,7 @@ namespace 舵狗_图像识别 {
         Function_s = 2
         Identify_send()
         Identify_receive()
-        return Ball_status
+        return Line_angle
     }
 
     //% block=舵狗.识别小球返回值 block="识别小球返回值 | %Color"
@@ -1213,6 +1278,29 @@ namespace 舵狗_图像识别 {
             default: return 255
         }
     }
+
+    //% block=舵狗.巡线识别 block="巡线识别"
+    //%weight=3
+    //% name.fieldEditor="gridpicker" name.fieldOptions.columns=10
+    export function 巡线识别(){
+        Function_c = 0x40
+        Function_s = 3
+        Identify_send()
+        Identify_receive()
+    }
+
+    //% block=舵狗.巡线测试 block="巡线识别测试"
+    //% weight = 3
+    //% name.fieldEditor = "gridpicker" name.fieldOptions.columns = 10
+    export function 巡线识别测试():number{
+        Function_c = 0x40
+        Function_s = 3
+        Identify_send()
+        Identify_receive()
+        //basic.showNumber(Line_detect)
+        return Line_angle
+    }
+
 }
 
 
@@ -1247,101 +1335,101 @@ namespace 舵狗_语音识别 {
     //语音数据
     function voice_data() {
         switch (get_data) {
-            case 0x002: 舵狗_底盘模式.舵狗_数据清除()
+            case 0x002: 舵狗_底盘模式.舵狗_复位()
                 舵狗_底盘模式.舵狗_原地站立()
                 //舵狗_底盘模式.舵狗_步态(舵狗_底盘模式.gait.慢跑);
                 break
 
-            case 0x003: 舵狗_底盘模式.舵狗_数据清除()
-                舵狗_底盘模式.舵狗_步态(舵狗_底盘模式.gait.慢跑)
+            case 0x003: 舵狗_底盘模式.舵狗_复位()
+                舵狗_底盘模式.舵狗_步态(舵狗_底盘模式.gait.小跑)
                 舵狗_底盘模式.舵狗_控制(舵狗_底盘模式.mode.前进, voice_speed, 1); break
 
-            case 0x004: 舵狗_底盘模式.舵狗_数据清除()
-                舵狗_底盘模式.舵狗_步态(舵狗_底盘模式.gait.慢跑)
+            case 0x004: 舵狗_底盘模式.舵狗_复位()
+                舵狗_底盘模式.舵狗_步态(舵狗_底盘模式.gait.小跑)
                 舵狗_底盘模式.舵狗_控制(舵狗_底盘模式.mode.后退, voice_speed, 1); break
 
-            case 0x005: 舵狗_底盘模式.舵狗_数据清除()
-                舵狗_底盘模式.舵狗_步态(舵狗_底盘模式.gait.慢跑)
+            case 0x005: 舵狗_底盘模式.舵狗_复位()
+                舵狗_底盘模式.舵狗_步态(舵狗_底盘模式.gait.小跑)
                 舵狗_底盘模式.舵狗_控制(舵狗_底盘模式.mode.左移, voice_speed, 1); break
 
-            case 0x006: 舵狗_底盘模式.舵狗_数据清除()
-                舵狗_底盘模式.舵狗_步态(舵狗_底盘模式.gait.慢跑)
+            case 0x006: 舵狗_底盘模式.舵狗_复位()
+                舵狗_底盘模式.舵狗_步态(舵狗_底盘模式.gait.小跑)
                 舵狗_底盘模式.舵狗_控制(舵狗_底盘模式.mode.右移, voice_speed, 1); break
 
-            case 0x007: 舵狗_底盘模式.舵狗_数据清除()
-                舵狗_底盘模式.舵狗_步态(舵狗_底盘模式.gait.慢跑)
+            case 0x007: 舵狗_底盘模式.舵狗_复位()
+                舵狗_底盘模式.舵狗_步态(舵狗_底盘模式.gait.小跑)
                 舵狗_底盘模式.舵狗_控制(舵狗_底盘模式.mode.左转, voice_speed, 1); break
 
-            case 0x008: 舵狗_底盘模式.舵狗_数据清除()
-                舵狗_底盘模式.舵狗_步态(舵狗_底盘模式.gait.慢跑)
+            case 0x008: 舵狗_底盘模式.舵狗_复位()
+                舵狗_底盘模式.舵狗_步态(舵狗_底盘模式.gait.小跑)
                 舵狗_底盘模式.舵狗_控制(舵狗_底盘模式.mode.右转, voice_speed, 1); break
 
-            case 0x009: 舵狗_底盘模式.舵狗_数据清除()
-                舵狗_底盘模式.舵狗_步态(舵狗_底盘模式.gait.慢跑)
+            case 0x009: 舵狗_底盘模式.舵狗_复位()
+                舵狗_底盘模式.舵狗_步态(舵狗_底盘模式.gait.小跑)
                 舵狗_底盘模式.舵狗_控制(舵狗_底盘模式.mode.前进, voice_speed, 1)
                 舵狗_底盘模式.舵狗_控制(舵狗_底盘模式.mode.左移, voice_speed, 1); break
 
-            case 0x00A: 舵狗_底盘模式.舵狗_数据清除()
-                舵狗_底盘模式.舵狗_步态(舵狗_底盘模式.gait.慢跑)
+            case 0x00A: 舵狗_底盘模式.舵狗_复位()
+                舵狗_底盘模式.舵狗_步态(舵狗_底盘模式.gait.小跑)
                 舵狗_底盘模式.舵狗_控制(舵狗_底盘模式.mode.前进, voice_speed, 1)
                 舵狗_底盘模式.舵狗_控制(舵狗_底盘模式.mode.右移, voice_speed, 1); break
 
-            case 0x00B: 舵狗_底盘模式.舵狗_数据清除()
-                舵狗_底盘模式.舵狗_步态(舵狗_底盘模式.gait.慢跑)
+            case 0x00B: 舵狗_底盘模式.舵狗_复位()
+                舵狗_底盘模式.舵狗_步态(舵狗_底盘模式.gait.小跑)
                 舵狗_底盘模式.舵狗_控制(舵狗_底盘模式.mode.后退, voice_speed, 1)
                 舵狗_底盘模式.舵狗_控制(舵狗_底盘模式.mode.左移, voice_speed, 1); break
 
-            case 0x00C: 舵狗_底盘模式.舵狗_数据清除()
-                舵狗_底盘模式.舵狗_步态(舵狗_底盘模式.gait.慢跑)
+            case 0x00C: 舵狗_底盘模式.舵狗_复位()
+                舵狗_底盘模式.舵狗_步态(舵狗_底盘模式.gait.小跑)
                 舵狗_底盘模式.舵狗_控制(舵狗_底盘模式.mode.后退, voice_speed, 1)
                 舵狗_底盘模式.舵狗_控制(舵狗_底盘模式.mode.右移, voice_speed, 1); break
 
-            case 0x00D: 舵狗_底盘模式.舵狗_数据清除()
+            case 0x00D: 舵狗_底盘模式.舵狗_复位()
                 舵狗_底盘模式.舵狗_原地站立
                 舵狗_底盘模式.舵狗_控制角度(舵狗_底盘模式.mode1.俯视, 10, 1); break
 
-            case 0x00E: 舵狗_底盘模式.舵狗_数据清除()
+            case 0x00E: 舵狗_底盘模式.舵狗_复位()
                 舵狗_底盘模式.舵狗_原地站立
                 舵狗_底盘模式.舵狗_控制角度(舵狗_底盘模式.mode1.仰视, 10, 1); break
 
-            case 0x00F: 舵狗_底盘模式.舵狗_数据清除()
+            case 0x00F: 舵狗_底盘模式.舵狗_复位()
                 舵狗_底盘模式.舵狗_原地站立
                 舵狗_底盘模式.舵狗_控制角度(舵狗_底盘模式.mode1.左摆, 10, 1); break
 
-            case 0x010: 舵狗_底盘模式.舵狗_数据清除()
+            case 0x010: 舵狗_底盘模式.舵狗_复位()
                 舵狗_底盘模式.舵狗_原地站立
                 舵狗_底盘模式.舵狗_控制角度(舵狗_底盘模式.mode1.右摆, 10, 1); break
             //立正
-            case 0x11: 舵狗_底盘模式.舵狗_数据清除()
+            case 0x11: 舵狗_底盘模式.舵狗_复位()
                 舵狗_底盘模式.舵狗_原地站立(); break
 
-            case 0x12: 舵狗_底盘模式.舵狗_数据清除()
+            case 0x12: 舵狗_底盘模式.舵狗_复位()
                 舵狗_底盘模式.舵狗_原地站立()
                 舵狗_底盘模式.舵狗_高度(5); break
 
-            case 0x13: 舵狗_底盘模式.舵狗_数据清除()
+            case 0x13: 舵狗_底盘模式.舵狗_复位()
                 舵狗_底盘模式.舵狗_原地站立()
                 舵狗_底盘模式.舵狗_高度(0); break
             //快速踏步
-            case 0x14: 舵狗_底盘模式.舵狗_数据清除()
-                舵狗_底盘模式.舵狗_步态(舵狗_底盘模式.gait.慢跑); break
+            case 0x14: 舵狗_底盘模式.舵狗_复位()
+                舵狗_底盘模式.舵狗_步态(舵狗_底盘模式.gait.小跑); break
             //慢速踏步
-            case 0x15: 舵狗_底盘模式.舵狗_数据清除()
-                舵狗_底盘模式.舵狗_步态(舵狗_底盘模式.gait.慢跑); break
+            case 0x15: 舵狗_底盘模式.舵狗_复位()
+                舵狗_底盘模式.舵狗_步态(舵狗_底盘模式.gait.小跑); break
             //加速
-            case 0x16: 舵狗_底盘模式.舵狗_数据清除()
+            case 0x16: 舵狗_底盘模式.舵狗_复位()
                 voice_speed = 10; break
             //减速
-            case 0x17: 舵狗_底盘模式.舵狗_数据清除()
+            case 0x17: 舵狗_底盘模式.舵狗_复位()
                 voice_speed = 7; break
             //握手
-            case 0x18: 舵狗_底盘模式.舵狗_数据清除()
+            case 0x18: 舵狗_底盘模式.舵狗_复位()
                 舵狗_底盘模式.舵狗_原地站立(); break
             //俯卧撑
-            case 0x19: 舵狗_底盘模式.舵狗_数据清除()
+            case 0x19: 舵狗_底盘模式.舵狗_复位()
                 舵狗_底盘模式.舵狗_原地站立(); break
             //俯卧撑
-            case 0x1A: 舵狗_底盘模式.舵狗_数据清除()
+            case 0x1A: 舵狗_底盘模式.舵狗_复位()
                 舵狗_底盘模式.舵狗_停止; break
             default: return
         }
