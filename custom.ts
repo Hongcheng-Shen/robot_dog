@@ -49,7 +49,7 @@ function SPI_Send() {
         //serial.writeBuffer(InfoTemp)
         //serial.writeBuffer(ToSlaveBuf)
         SPI_unpacking()
-        basic.pause(100)
+        basic.pause(50)
     }
 }
 
@@ -310,11 +310,11 @@ namespace 舵狗_底盘模式 {
     export function 舵狗_摔倒自恢复(): void {
         if (robot_mode != 0x08)
             return
-        if(robot_mode == 0x08){
+        if (robot_mode == 0x08) {
             gait_mode = 0x07
             SPI_Send()
             robot_mode_1 = robot_mode
-            while (robot_mode_1 != 0x07){
+            while (robot_mode_1 != 0x07) {
                 return
             }
         }
@@ -402,10 +402,10 @@ namespace 舵狗_底盘模式 {
                 rc_spd_cmd_X = (-Sum_S); SPI_Send(); break;
             case mode.左转:
                 rc_att_rate_cmd = (speed1 * 5); SPI_Send(); break;
-                //rc_att_rate_cmd = speed1; SPI_Send(); break;
+            //rc_att_rate_cmd = speed1; SPI_Send(); break;
             case mode.右转:
                 rc_att_rate_cmd = (-speed1 * 5); SPI_Send(); break;
-                //rc_att_rate_cmd = -speed1; SPI_Send(); break;
+            //rc_att_rate_cmd = -speed1; SPI_Send(); break;
             case mode.左移:
                 rc_spd_cmd_y = (-Sum_S); SPI_Send(); break;
             case mode.右移:
@@ -430,10 +430,12 @@ namespace 舵狗_底盘模式 {
             case mode1.仰视:
                 rc_att_cmd_x = (-speed1); break;
             case mode1.左摆:
-                if(speed1==0){
-                    rc_att_cmd_y = 0; break;}
-                else{    
-                    rc_att_cmd_y = speed1+10; break;}
+                if (speed1 == 0) {
+                    rc_att_cmd_y = 0; break;
+                }
+                else {
+                    rc_att_cmd_y = speed1 + 10; break;
+                }
             case mode1.右摆:
                 if (speed1 == 0) {
                     rc_att_cmd_y = 0; break;
@@ -944,12 +946,12 @@ namespace 舵狗_图像识别 {
     let Identify_TX = pins.createBuffer(10)
     let Identify_RX = pins.createBuffer(50)
     let cnt_p = 0
-    
+
     //二维码
     let Identify_x = 0x00, Identify_y = 0x00, Identify_z = 0x00
     let Identify_Flip_x = 0x00, Identify_Flip_y = 0x00, Identify_Flip_z = 0x00
     let Identify_status = 0x00, Identify_pattern = 0x00
-    
+
     //小球
     let Ball_status = 0x00  //状态
     let Ball_X = 0x00, Ball_Y = 0x00 //x轴、y轴
@@ -959,8 +961,9 @@ namespace 舵狗_图像识别 {
     //巡线
     let Line_detect = 0x00 //检测
     let Line_effect = 0x00 //识别线的效果
-    let Line_angle  = 0x00 //角度
+    let Line_angle = 0x00 //角度
     let Line_position = 0x00 //位置
+    let s = 0
 
     let CRC_L = 0x00
     let CRC_H = 0x00
@@ -970,6 +973,33 @@ namespace 舵狗_图像识别 {
 
     let Function_s = 0      //功能选着（1：二维码 2：小球 3:巡线）
     let Function_c = 0x00   //功能码 
+
+    //PID 
+    let Kp_P = 0.260  //P_位置调节参数
+    let Kp_A = 0.350  //P_角度调节参数
+    let Ki_P = 0.0015  //D_位置调节参数
+    let Ki_A = 0.0010 //D_角度调节参数    
+    let Kd_P = 0.0010  //D_位置调节参数
+    let Kd_A = 0.0010  //D_角度调节参数
+
+    let error_P = 0.000 // 位置误差
+    let error_A = 0.000 // 角度误差
+
+    let _error_P = 0.000 // 位置误差
+    let _error_A = 0.000 // 角度误差
+
+    let integral_P = 0.000 // 位置误差累加值
+    let integral_A = 0.000 // 角度误差累加值
+    let Ki_ovP = 0.000       //Ki输出值
+    let Ki_ovA = 0.000       //Ki输出值
+
+    let derivative_P = 0.000 //误差相差值
+    let prev_error_P = 0.000 //储存上个误差
+    let derivative_A = 0.000 //误差相差值
+    let prev_error_A = 0.000 //储存上个误差
+
+    let speed_P = 0.000 //移动速度输出
+    let speed_A = 0.000 //角度速度输出
 
 
     //------------TX--------------
@@ -1007,11 +1037,11 @@ namespace 舵狗_图像识别 {
             //serial.writeNumber(length_r)
             usMBCRC16(Identify_RX, length_r + 3)
             if (Identify_RX[length_r + 3] == CRC_H && Identify_RX[length_r + 4] == CRC_L) {
-                switch (Function_s){
-                    case 1: Identify_collection(Identify_RX);break;
+                switch (Function_s) {
+                    case 1: Identify_collection(Identify_RX); break;
                     case 2: Ball_rd(Identify_RX); break;
-                    case 3: Line_inspection(Identify_RX);break;
-                    default: return 
+                    case 3: Line_inspection(Identify_RX); break;
+                    default: return
                 }
             }
         }
@@ -1053,14 +1083,15 @@ namespace 舵狗_图像识别 {
         //serial.writeNumber(Ball_X)
     }
     //巡线识别
-    function Line_inspection(Identify_RX_1: any){
+    function Line_inspection(Identify_RX_1: any) {
         let Identify_RX_2 = pins.createBuffer(50)
         Identify_RX_2 = Identify_RX_1
         let cnt_I = 3
         Line_detect = Data_conversion(Identify_RX_2[cnt_I++], Identify_RX_2[cnt_I++]) //检测
         Line_effect = Data_conversion(Identify_RX_2[cnt_I++], Identify_RX_2[cnt_I++]) //识别线的效果
-        Line_angle =  Data_conversion(Identify_RX_2[cnt_I++], Identify_RX_2[cnt_I++]) //角度
+        Line_angle = Data_conversion(Identify_RX_2[cnt_I++], Identify_RX_2[cnt_I++]) //角度
         Line_position = Data_conversion(Identify_RX_2[cnt_I++], Identify_RX_2[cnt_I++])//位置
+
     }
 
     let aucCRCHi = [0x00, 0xC1, 0x81, 0x40, 0x01, 0xC0, 0x80, 0x41, 0x01, 0xC0, 0x80, 0x41,
@@ -1147,19 +1178,61 @@ namespace 舵狗_图像识别 {
 
     }
 
-    //巡线识别
-    function Line_pi(){
+
+    //巡线识别示例
+    function Line_pi() {
+        let time = control.millis()
         Function_c = 0x40
         Function_s = 3
         Identify_send()
         Identify_receive()
-        //  if(Line_detect == 1){
-        // //     rc_att_rate_cmd = Line_angle
-        //      rc_spd_cmd_y = Line_position
-        //  }
-        
+        if (Line_detect == 1) {
+            //进入行走模式
+            gait_mode = 0x01;
+            while (1) {
+                SPI_Send()
+                if (robot_mode == 13) {
+                    SPI_Send()
+                    break;
+                }
+            }
+            //获取位置、角度信息
+            Identify_send()
+            Identify_receive()
+            //角度、位置误差
+            error_P = Line_position / 100.000
+            error_A = Line_angle * 1.000
+            //Ki 位置、角度调节
+            integral_P = integral_P + error_P
+            integral_A = integral_P + error_A
+            if (time % 10 == 0) {
+                Ki_ovP = (Ki_P * integral_P)
+                Ki_ovA = (Ki_P * integral_A)
+                integral_P = 0
+            }
+            //Kd位置、角度调节
+            derivative_P = error_P - prev_error_P
+            prev_error_P = error_P
+            derivative_A = error_A - prev_error_A
+            prev_error_A = error_A
+            //动力输出值
+            speed_P = (Kp_P * error_P) + (Ki_P * integral_P) + (Kd_P * derivative_P)//移动
+            speed_A = (Kp_A * error_A) + (Ki_A * integral_A) + (Kd_A * derivative_A)//转弯
+            //动力输出值
+            rc_spd_cmd_y = speed_P
+            rc_att_rate_cmd = -speed_A
+            rc_spd_cmd_X = 0.04 //前进
+            //动力输出
+            SPI_Send()
+        }
+        else {
+            rc_spd_cmd_y = 0
+            rc_att_rate_cmd = 0
+            rc_spd_cmd_X = 0
+            SPI_Send()
+            Standing()
+        }
     }
-
 
     //位置值
     export enum Position_value {
@@ -1189,6 +1262,18 @@ namespace 舵狗_图像识别 {
         高度值,
         //% block="像素点"
         像素点
+    }
+
+    //巡线
+    export enum Line_patrol_return {
+        //% block="状态"
+        状态,
+        //% block="识别效果"
+        识别效果,
+        //% block="偏差角度"
+        偏差角度,
+        //% block="偏差位置"
+        偏差位置
     }
 
 
@@ -1279,26 +1364,28 @@ namespace 舵狗_图像识别 {
         }
     }
 
-    //% block=舵狗.巡线识别 block="巡线识别"
+    //% block=舵狗.巡线测试 block="巡线测试"
     //%weight=3
     //% name.fieldEditor="gridpicker" name.fieldOptions.columns=10
-    export function 巡线识别(){
-        Function_c = 0x40
-        Function_s = 3
-        Identify_send()
-        Identify_receive()
+    export function 巡线测试() {
+        Line_pi()
     }
 
-    //% block=舵狗.巡线测试 block="巡线识别测试"
+    //% block=舵狗.巡线识别返回  block="巡线识别返回 | %X"
     //% weight = 3
     //% name.fieldEditor = "gridpicker" name.fieldOptions.columns = 10
-    export function 巡线识别测试():number{
+    export function 巡线识别返回(X: Line_patrol_return): number {
         Function_c = 0x40
         Function_s = 3
         Identify_send()
         Identify_receive()
-        //basic.showNumber(Line_detect)
-        return Line_angle
+        switch (X) {
+            case Line_patrol_return.状态: return Line_detect;
+            case Line_patrol_return.识别效果: return Line_effect;
+            case Line_patrol_return.偏差角度: return Line_angle;
+            case Line_patrol_return.偏差位置: return Line_position;
+            default: return 255
+        }
     }
 
 }
